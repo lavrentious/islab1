@@ -64,13 +64,12 @@
         },
         "has_toothpick": {
           "name": "has_toothpick",
-          "type": "varchar(255)",
+          "type": "boolean",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
-          "length": 255,
-          "mappedType": "string"
+          "mappedType": "boolean"
         },
         "car_name": {
           "name": "car_name",
@@ -84,13 +83,12 @@
         },
         "car_cool": {
           "name": "car_cool",
-          "type": "varchar(255)",
+          "type": "boolean",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
-          "length": 255,
-          "mappedType": "string"
+          "mappedType": "boolean"
         },
         "mood": {
           "name": "mood",
@@ -110,13 +108,12 @@
         },
         "impact_speed": {
           "name": "impact_speed",
-          "type": "varchar(255)",
+          "type": "integer",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
-          "length": 255,
-          "mappedType": "string"
+          "mappedType": "integer"
         },
         "soundtrack_name": {
           "name": "soundtrack_name",
@@ -130,13 +127,12 @@
         },
         "minutes_of_waiting": {
           "name": "minutes_of_waiting",
-          "type": "varchar(255)",
+          "type": "integer",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
-          "length": 255,
-          "mappedType": "string"
+          "mappedType": "integer"
         },
         "weapon_type": {
           "name": "weapon_type",

@@ -1,6 +1,10 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { PaginateParams, PaginateResponse } from "src/modules/common/types";
-import { CreateHumanBeingDto, HumanBeing } from "./types";
+import { PaginateResponse } from "src/modules/common/types";
+import {
+  CreateHumanBeingDto,
+  FindAllHumanbeingsQueryParamsDto,
+  HumanBeing,
+} from "./types";
 
 export const labApi = createApi({
   reducerPath: "labApi",
@@ -15,7 +19,7 @@ export const labApi = createApi({
     }),
     findAllHumanBeings: build.query<
       PaginateResponse<HumanBeing>,
-      PaginateParams
+      FindAllHumanbeingsQueryParamsDto
     >({
       query: (params) => ({
         url: "/",
@@ -55,8 +59,22 @@ export const labApi = createApi({
         { type: "HumanBeing", id: "LIST" },
       ],
     }),
+    deleteHumanBeing: build.mutation<void, number>({
+      query: (id) => ({
+        url: `/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_, __, id) => [
+        { type: "HumanBeing", id },
+        { type: "HumanBeing", id: "LIST" },
+      ],
+    }),
   }),
 });
 
-export const { useFindAllHumanBeingsQuery, useCreateHumanBeingMutation } =
-  labApi;
+export const {
+  useFindAllHumanBeingsQuery,
+  useCreateHumanBeingMutation,
+  useDeleteHumanBeingMutation,
+  useUpdateHumanBeingMutation,
+} = labApi;

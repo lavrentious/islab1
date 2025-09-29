@@ -1,5 +1,11 @@
 export type GenericApiError = {
-  title: string;
-  details: string;
-  timestamp: string;
+  status: number;
+};
+
+export type ValidationApiError = GenericApiError & {
+  data: {
+    error: string;
+    message: string[];
+    statusCode: number;
+  };
 };

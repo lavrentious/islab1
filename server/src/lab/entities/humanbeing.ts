@@ -35,7 +35,7 @@ class Car {
   @Property()
   name!: string; //Поле не может быть null
 
-  @Property({ nullable: true })
+  @Property({ nullable: true, columnType: "boolean" })
   cool?: boolean | null;
 }
 
@@ -65,10 +65,10 @@ export class HumanBeing {
   @Property({ onCreate: () => new Date() })
   creationDate!: Date;
 
-  @Property()
+  @Property({ columnType: "boolean" })
   realHero!: boolean;
 
-  @Property({ nullable: true })
+  @Property({ nullable: true, columnType: "boolean" })
   hasToothpick?: boolean | null;
 
   @Embedded(() => Car)
@@ -77,13 +77,13 @@ export class HumanBeing {
   @Enum({ items: () => Mood, type: "string" })
   mood!: Mood;
 
-  @Property({ nullable: true })
+  @Property({ columnType: "integer", nullable: true })
   impactSpeed?: number | null;
 
   @Property()
   soundtrackName!: string;
 
-  @Property({ nullable: true })
+  @Property({ columnType: "integer", nullable: true })
   minutesOfWaiting?: number | null;
 
   @Enum({ items: () => WeaponType, type: "string" })

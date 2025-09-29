@@ -1,3 +1,5 @@
+import { PaginateParams } from "src/modules/common/types";
+
 export enum Mood {
   SADNESS = "SADNESS",
   SORROW = "SORROW",
@@ -51,3 +53,19 @@ export class HumanBeing {
 }
 
 export type CreateHumanBeingDto = Omit<HumanBeing, "id" | "creationDate">;
+
+export class FindAllHumanbeingsQueryParamsDto extends PaginateParams {
+  // filters
+  name?: string;
+  realHero?: boolean;
+  hasToothpick?: boolean | null;
+  mood?: Mood;
+  carName?: string;
+  carCool?: boolean | null;
+  weaponType?: WeaponType;
+  soundtrackName?: string;
+
+  // sorting
+  sortBy?: keyof HumanBeing;
+  sortOrder?: "ASC" | "DESC";
+}

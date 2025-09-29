@@ -1,3 +1,82 @@
+import { ApiPropertyOptional } from "@nestjs/swagger";
+import { Transform } from "class-transformer";
+import { IsBoolean, IsEnum, IsIn, IsOptional, IsString } from "class-validator";
 import { PaginateParams } from "src/common/dto/pagination.dto";
+import { nullableBooleanFromString } from "src/common/utils/queryparams.utils";
+import { HumanBeing, Mood, WeaponType } from "../entities/humanbeing";
 
-export class FindAllHumanbeingsQueryParamsDto extends PaginateParams {}
+export class FindAllHumanbeingsQueryParamsDto extends PaginateParams {
+  // filters
+  @ApiPropertyOptional({ example: "joe biden" })
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @ApiPropertyOptional({ example: "Ryan Gosling" })
+  @Transform(
+    ({ value }) =>
+      (value === undefined ? value : value === "true") as boolean | undefined,
+  )
+  @IsBoolean()
+  @IsOptional()
+  realHero?: boolean;
+
+  @ApiPropertyOptional()
+  @Transform(({ value }) =>
+    nullableBooleanFromString(value as string | undefined | null),
+  )
+  @IsBoolean()
+  @IsOptional()
+  hasToothpick?: boolean | null;
+
+  @ApiPropertyOptional({ enum: Mood })
+  @IsOptional()
+  @IsEnum(Mood)
+  mood?: Mood;
+
+  @ApiPropertyOptional({ example: "honda civic" })
+  @IsOptional()
+  @IsString()
+  carName?: string;
+
+  @ApiPropertyOptional()
+  @Transform(({ value }) =>
+    nullableBooleanFromString(value as string | undefined | null),
+  )
+  @IsBoolean()
+  @IsOptional()
+  carCool?: boolean | null;
+
+  @ApiPropertyOptional({ enum: WeaponType })
+  @IsOptional()
+  @IsEnum(WeaponType)
+  weaponType?: WeaponType;
+
+  @ApiPropertyOptional({ example: "College, Electric Youth - A Real Hero" })
+  @IsOptional()
+  @IsString()
+  soundtrackName?: string;
+
+  // sorting
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsIn([
+    "id",
+    "name",
+    "realHero",
+    "hasToothpick",
+    "mood",
+    "carName",
+    "carCool",
+    "weaponType",
+    "soundtrackName",
+  ])
+  @IsString()
+  sortBy?: keyof HumanBeing;
+
+  @ApiPropertyOptional({ default: "ASC" })
+  @IsOptional()
+  @IsIn(["ASC", "DESC"])
+  @IsString()
+  sortOrder?: "ASC" | "DESC";
+}

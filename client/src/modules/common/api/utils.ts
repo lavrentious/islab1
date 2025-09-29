@@ -17,6 +17,9 @@ export function formatApiError(
       const data = error.data as { message?: string; statusCode?: number };
 
       if (data?.message) {
+        if (Array.isArray(data.message)) {
+          return data.message.join("\n");
+        }
         return data.message;
       }
 

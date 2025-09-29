@@ -13,7 +13,7 @@ import {
 const RequiredMark = () => <span className="text-danger"> *</span>;
 
 export interface HumanBeingFormProps {
-  existing?: HumanBeing;
+  existing?: HumanBeing | null;
   onSubmit: (humanBeing: CreateHumanBeingDto) => void;
   setIsValid?: (value: boolean) => void;
   formId?: string;

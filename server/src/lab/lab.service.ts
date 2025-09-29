@@ -1,5 +1,9 @@
 import { InjectRepository } from "@mikro-orm/nestjs";
-import { EntityManager, EntityRepository } from "@mikro-orm/postgresql";
+import {
+  EntityManager,
+  EntityRepository,
+  FilterQuery,
+} from "@mikro-orm/postgresql";
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PaginateResponse } from "src/common/dto/pagination.dto";
 import {
@@ -33,17 +37,59 @@ export class LabService {
   ): Promise<PaginateResponse<HumanBeing>> {
     const paginateQuery = paginateParamsToQuery<HumanBeing>(params);
     const totalItems = await this.humanBeingRepo.count();
-    let items: HumanBeing[];
-    if (params.paginate && params.page && params.limit && paginateQuery) {
-      items = await this.humanBeingRepo.findAll({ ...paginateQuery });
-    } else {
-      items = await this.humanBeingRepo.findAll({});
+
+    console.log("params", params);
+
+    // filtering
+    const where: FilterQuery<HumanBeing> = {};
+    if (params.realHero !== undefined) {
+      where.realHero = params.realHero;
+    }
+    if (params.hasToothpick !== undefined) {
+      where.hasToothpick = params.hasToothpick;
+    }
+    if (params.mood !== undefined) {
+      where.mood = params.mood;
+    }
+    if (params.weaponType !== undefined) {
+      where.weaponType = params.weaponType;
+    }
+    if (params.name !== undefined) {
+      where.name = { $ilike: `%${params.name}%` };
+    }
+    if (params.soundtrackName !== undefined) {
+      where.soundtrackName = { $ilike: `%${params.soundtrackName}%` };
+    }
+    if (params.carName !== undefined) {
+      where.car = { ...where.car, name: { $ilike: `%${params.carName}%` } };
+    }
+    if (params.carCool !== undefined) {
+      where.car = { ...where.car, cool: params.carCool };
     }
 
+    // sorting
+    const orderBy: Record<string, "ASC" | "DESC"> = {};
+    if (params.sortBy) orderBy[params.sortBy] = params.sortOrder || "ASC";
+
+    // query
+    console.log("where", where);
+    let items: HumanBeing[];
+    if (params.paginate && params.page && params.limit && paginateQuery) {
+      items = await this.humanBeingRepo.findAll({
+        ...paginateQuery,
+        where,
+        orderBy,
+      });
+    } else {
+      items = await this.humanBeingRepo.findAll({ where, orderBy });
+    }
+
+    // pagination
     const limit = params.limit ?? totalItems;
     const page = params.page ?? 1;
     const totalPages = calculateTotalPages(totalItems, limit);
 
+    // res
     return {
       items,
       limit,
