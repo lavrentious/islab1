@@ -72,8 +72,9 @@ export class CreateHumanBeingDto {
   mood!: Mood;
 
   @ApiProperty({ example: 99.9, description: "Impact speed" })
+  @IsOptional()
   @IsNumber()
-  impactSpeed!: number;
+  impactSpeed?: number | null;
 
   @ApiProperty({
     example: "College, Electric Youth - A Real Hero",
