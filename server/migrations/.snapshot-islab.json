@@ -27,16 +27,16 @@
         },
         "coordinates_x": {
           "name": "coordinates_x",
-          "type": "int",
+          "type": "double precision",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "mappedType": "integer"
+          "mappedType": "double"
         },
         "coordinates_y": {
           "name": "coordinates_y",
-          "type": "int",
+          "type": "integer",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,

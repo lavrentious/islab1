@@ -23,10 +23,10 @@ export enum WeaponType {
 
 @Embeddable()
 class Coordinates {
-  @Property()
+  @Property({ columnType: "double precision" })
   x!: number; // double
 
-  @Property()
+  @Property({ columnType: "integer" })
   y!: number; // int
 }
 
