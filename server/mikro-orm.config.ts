@@ -6,8 +6,8 @@ import { config as dotenvConfig } from "dotenv";
 dotenvConfig({
   path:
     process.env.NODE_ENV === "production"
-      ? "production.env"
-      : "development.env",
+      ? ".env.production"
+      : ".env.development",
 });
 
 export default defineConfig({
