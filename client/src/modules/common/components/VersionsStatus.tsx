@@ -22,7 +22,8 @@ const VersionsStatus = () => {
         });
       }
     });
-  });
+  }, []);
+
   return (
     <pre>
       client:
