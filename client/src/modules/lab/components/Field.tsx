@@ -20,10 +20,6 @@ export function Field<Values extends FormikValues>({
   getError,
   ...props
 }: IFieldProps<Values>) {
-  // console.log("field", field);
-  // console.log("touched", f.touched[field]);
-  // console.log("errors", f.errors[field]);
-
   const touched = useMemo(
     () => (getTouched ? getTouched() : f.touched[field]),
     [f.touched, field, getTouched],

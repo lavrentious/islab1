@@ -38,8 +38,6 @@ export class LabService {
     const paginateQuery = paginateParamsToQuery<HumanBeing>(params);
     const totalItems = await this.humanBeingRepo.count();
 
-    console.log("params", params);
-
     // filtering
     const where: FilterQuery<HumanBeing> = {};
     if (params.realHero !== undefined) {
@@ -72,7 +70,6 @@ export class LabService {
     if (params.sortBy) orderBy[params.sortBy] = params.sortOrder || "ASC";
 
     // query
-    console.log("where", where);
     let items: HumanBeing[];
     if (params.paginate && params.page && params.limit && paginateQuery) {
       items = await this.humanBeingRepo.findAll({
