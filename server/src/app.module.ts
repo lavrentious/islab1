@@ -5,7 +5,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { EnvironmentVariables, validate } from "./env.validation";
-import { LabModule } from "./lab/lab.module";
+import { HumanBeingsModule } from "./humanbeings/humanbeings.module";
 
 @Module({
   imports: [
@@ -31,7 +31,7 @@ import { LabModule } from "./lab/lab.module";
       inject: [ConfigService],
       driver: PostgreSqlDriver,
     }),
-    LabModule,
+    HumanBeingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -14,19 +14,19 @@ import { CreateHumanBeingDto } from "./dto/create-humanbeing.dto";
 import { FindAllHumanbeingsQueryParamsDto } from "./dto/find-all-humanbeings-query-params.dto";
 import { UpdateHumanBeingDto } from "./dto/update-humanbeing.dto";
 import { HumanBeing } from "./entities/humanbeing";
-import { LabService } from "./lab.service";
+import { HumanBeingsService } from "./humanbeings.service";
 
-@ApiTags("Lab (Human Beings)")
-@Controller("lab")
-export class LabController {
-  constructor(private readonly labService: LabService) {}
+@ApiTags("Human Beings")
+@Controller("humanbeings")
+export class HumanBeingsController {
+  constructor(private readonly service: HumanBeingsService) {}
 
   @ApiOperation({ summary: "Create human being" })
   @ApiResponse({ status: 201, description: "Human created successfully" })
   @ApiResponse({ status: 400, description: "Bad request" })
   @Post()
   async create(@Body() dto: CreateHumanBeingDto): Promise<HumanBeing> {
-    return this.labService.create(dto);
+    return this.service.create(dto);
   }
 
   @ApiOperation({ summary: "Find all human beings" })
@@ -35,14 +35,14 @@ export class LabController {
   async findAll(
     @Query() params: FindAllHumanbeingsQueryParamsDto,
   ): Promise<PaginateResponse<HumanBeing>> {
-    return this.labService.findAll(params);
+    return this.service.findAll(params);
   }
 
   @ApiOperation({ summary: "Find human being by id" })
   @ApiResponse({ status: 404, description: "Human being not found." })
   @Get(":id")
   async findOne(@Param("id") id: string): Promise<HumanBeing> {
-    return this.labService.findOneOrFail(+id);
+    return this.service.findOneOrFail(+id);
   }
 
   @ApiOperation({ summary: "Update human being" })
@@ -54,12 +54,12 @@ export class LabController {
     @Param("id") id: string,
     @Body() dto: UpdateHumanBeingDto,
   ): Promise<HumanBeing> {
-    return this.labService.update(+id, dto);
+    return this.service.update(+id, dto);
   }
 
   @ApiResponse({ status: 404, description: "Human being not found." })
   @Delete(":id")
   async remove(@Param("id") id: string): Promise<void> {
-    return this.labService.remove(+id);
+    return this.service.remove(+id);
   }
 }

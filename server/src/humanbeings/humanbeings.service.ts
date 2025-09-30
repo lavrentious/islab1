@@ -16,17 +16,15 @@ import { UpdateHumanBeingDto } from "./dto/update-humanbeing.dto";
 import { HumanBeing } from "./entities/humanbeing";
 
 @Injectable()
-export class LabService {
+export class HumanBeingsService {
   constructor(
     private readonly em: EntityManager,
     @InjectRepository(HumanBeing)
-    private readonly humanBeingRepo: EntityRepository<HumanBeing>,
+    private readonly repo: EntityRepository<HumanBeing>,
   ) {}
 
   async create(dto: CreateHumanBeingDto): Promise<HumanBeing> {
-    const humanBeing = this.humanBeingRepo.create(
-      dto as Omit<HumanBeing, "id">,
-    );
+    const humanBeing = this.repo.create(dto as Omit<HumanBeing, "id">);
     await this.em.flush();
 
     return humanBeing;
@@ -36,7 +34,7 @@ export class LabService {
     params: FindAllHumanbeingsQueryParamsDto,
   ): Promise<PaginateResponse<HumanBeing>> {
     const paginateQuery = paginateParamsToQuery<HumanBeing>(params);
-    const totalItems = await this.humanBeingRepo.count();
+    const totalItems = await this.repo.count();
 
     // filtering
     const where: FilterQuery<HumanBeing> = {};
@@ -75,13 +73,13 @@ export class LabService {
     // query
     let items: HumanBeing[];
     if (params.paginate && params.page && params.limit && paginateQuery) {
-      items = await this.humanBeingRepo.findAll({
+      items = await this.repo.findAll({
         ...paginateQuery,
         where,
         orderBy,
       });
     } else {
-      items = await this.humanBeingRepo.findAll({ where, orderBy });
+      items = await this.repo.findAll({ where, orderBy });
     }
 
     // pagination
@@ -100,11 +98,11 @@ export class LabService {
   }
 
   async findOne(id: number): Promise<HumanBeing | null> {
-    return this.humanBeingRepo.findOne({ id });
+    return this.repo.findOne({ id });
   }
 
   async findOneOrFail(id: number): Promise<HumanBeing> {
-    return this.humanBeingRepo.findOneOrFail(
+    return this.repo.findOneOrFail(
       { id },
       {
         failHandler: () =>
@@ -114,18 +112,18 @@ export class LabService {
   }
 
   async update(id: number, dto: UpdateHumanBeingDto) {
-    const entity = await this.humanBeingRepo.findOneOrFail({ id });
-    this.humanBeingRepo.assign(entity, dto);
+    const entity = await this.repo.findOneOrFail({ id });
+    this.repo.assign(entity, dto);
     await this.em.flush();
     return entity;
   }
 
   async exists(id: number): Promise<boolean> {
-    return (await this.humanBeingRepo.count({ id })) == 1;
+    return (await this.repo.count({ id })) == 1;
   }
 
   async remove(id: number): Promise<void> {
-    const deleted = await this.humanBeingRepo.nativeDelete({ id });
+    const deleted = await this.repo.nativeDelete({ id });
     if (deleted === 0) {
       throw new NotFoundException(`Human being #${id} not found`);
     }

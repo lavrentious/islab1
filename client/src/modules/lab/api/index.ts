@@ -6,10 +6,10 @@ import {
   HumanBeing,
 } from "./types";
 
-export const labApi = createApi({
-  reducerPath: "labApi",
+export const humanBeingsApi = createApi({
+  reducerPath: "humanBeingsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: (import.meta.env.VITE_API_BASE_URL ?? "") + "/lab",
+    baseUrl: (import.meta.env.VITE_API_BASE_URL ?? "") + "/humanbeings",
   }),
   tagTypes: ["HumanBeing"],
   endpoints: (build) => ({
@@ -77,4 +77,4 @@ export const {
   useCreateHumanBeingMutation,
   useDeleteHumanBeingMutation,
   useUpdateHumanBeingMutation,
-} = labApi;
+} = humanBeingsApi;
