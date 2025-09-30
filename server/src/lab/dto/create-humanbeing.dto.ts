@@ -64,8 +64,9 @@ export class CreateHumanBeingDto {
   @ApiProperty({ type: CarDto })
   @ValidateNested()
   @Type(() => CarDto)
+  @IsOptional()
   @IsObject()
-  car!: CarDto;
+  car?: CarDto | null;
 
   @ApiProperty({ enum: Mood, description: "Current mood" })
   @IsEnum(Mood)

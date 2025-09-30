@@ -1,4 +1,4 @@
-import { useFormik } from "formik";
+import { getIn, useFormik } from "formik";
 import React, { useEffect } from "react";
 import { Card, Col, Form, Row } from "react-bootstrap";
 import NullableCheckBox from "src/modules/common/components/NullableCheckBox";
@@ -27,10 +27,12 @@ const validationSchema = Yup.object().shape({
   }),
   realHero: Yup.boolean().required("Real hero is required"),
   hasToothpick: Yup.boolean().nullable(),
-  car: Yup.object().shape({
-    name: Yup.string().required("Car name is required"),
-    cool: Yup.boolean().nullable(),
-  }),
+  car: Yup.object()
+    .nullable()
+    .shape({
+      name: Yup.string().required("Car name is required"),
+      cool: Yup.boolean().nullable(),
+    }),
   mood: Yup.mixed<Mood>()
     .oneOf(Object.values(Mood))
     .required("Mood is required"),
@@ -67,7 +69,7 @@ const HumanBeingForm: React.FC<HumanBeingFormProps> = ({
       coordinates: existing?.coordinates ?? { x: 0, y: 0 },
       realHero: existing?.realHero ?? false,
       hasToothpick: existing?.hasToothpick ?? null,
-      car: existing?.car ?? { name: "", cool: null },
+      car: existing?.car ?? null,
       mood: existing?.mood ?? Mood.CALM,
       impactSpeed: existing?.impactSpeed ?? null,
       soundtrackName: existing?.soundtrackName ?? "",
@@ -196,43 +198,69 @@ const HumanBeingForm: React.FC<HumanBeingFormProps> = ({
           </Form.Group>
 
           <Card className="mb-3">
-            <Card.Header>Car</Card.Header>
-            <Card.Body>
-              <Form.Group className="mb-3">
-                <Form.Label htmlFor="car.name">
-                  Car name
-                  <RequiredMark />
-                </Form.Label>
-                <Form.Control
-                  id="car.name"
-                  placeholder="Enter car name"
-                  value={formik.values.car.name}
-                  onBlur={formik.handleBlur}
-                  onChange={formik.handleChange}
-                  isInvalid={
-                    formik.touched.car?.name && !!formik.errors.car?.name
-                  }
-                  isValid={formik.touched.car?.name && !formik.errors.car?.name}
-                />
-              </Form.Group>
+            <Card.Header>Car (optional)</Card.Header>
+            {formik.values.car != null && (
+              <Card.Body>
+                <Form.Group className="mb-3">
+                  <Form.Label htmlFor="car.name">
+                    Car name
+                    <RequiredMark />
+                  </Form.Label>
+                  <Form.Control
+                    id="car.name"
+                    placeholder="Enter car name"
+                    value={formik.values.car.name}
+                    onBlur={formik.handleBlur}
+                    onChange={formik.handleChange}
+                    isInvalid={
+                      getIn(formik.touched, "car.name") &&
+                      !!getIn(formik.errors, "car.name")
+                    }
+                    isValid={
+                      getIn(formik.touched, "car.name") &&
+                      !getIn(formik.errors, "car.name")
+                    }
+                  />
+                </Form.Group>
 
-              <Form.Group className="mb-3">
-                <Form.Label as="div">Cool?</Form.Label>
-                <NullableCheckBox
-                  value={formik.values.car.cool}
-                  setValue={(value) =>
-                    formik.setFieldValue(
-                      "car.cool" as keyof CreateHumanBeingDto,
-                      value,
-                    )
-                  }
-                  isValid={!formik.errors.car?.cool && formik.touched.car?.cool}
-                  isInvalid={
-                    !!formik.errors.car?.cool && formik.touched.car?.cool
-                  }
-                />
-              </Form.Group>
-            </Card.Body>
+                <Form.Group className="mb-3">
+                  <Form.Label as="div">Cool?</Form.Label>
+                  <NullableCheckBox
+                    value={formik.values.car.cool}
+                    setValue={(value) =>
+                      formik.setFieldValue(
+                        "car.cool" as keyof CreateHumanBeingDto,
+                        value,
+                      )
+                    }
+                    isValid={
+                      getIn(formik.touched, "car.name") &&
+                      !!getIn(formik.errors, "car.name")
+                    }
+                    isInvalid={
+                      getIn(formik.touched, "car.name") &&
+                      !getIn(formik.errors, "car.name")
+                    }
+                  />
+                </Form.Group>
+              </Card.Body>
+            )}
+            <Card.Footer>
+              <Form.Check
+                type="checkbox"
+                label="Enable"
+                checked={!!formik.values.car}
+                onChange={(e) =>
+                  formik.setFieldValue(
+                    "car",
+                    e.target.checked
+                      ? ({ name: "", cool: null } as CreateHumanBeingDto["car"])
+                      : null,
+                  )
+                }
+                name="hasCar"
+              />
+            </Card.Footer>
           </Card>
 
           <Form.Group className="mb-3" controlId="mood">

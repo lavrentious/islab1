@@ -35,6 +35,14 @@ export class FindAllHumanbeingsQueryParamsDto extends PaginateParams {
   mood?: Mood;
 
   @ApiPropertyOptional({ example: "honda civic" })
+  @Transform(({ value }) =>
+    nullableBooleanFromString(value as string | undefined | null),
+  )
+  @IsIn([null])
+  @IsOptional()
+  car?: null;
+
+  @ApiPropertyOptional({ example: "honda civic" })
   @IsOptional()
   @IsString()
   carName?: string;

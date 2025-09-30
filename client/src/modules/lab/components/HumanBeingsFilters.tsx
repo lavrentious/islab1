@@ -166,6 +166,17 @@ const HumanBeingsFilters: React.FC<HumanBeingsFiltersProps> = ({
         </Col>
 
         <Col md={4}>
+          <Form.Check
+            type="checkbox"
+            label="No Car"
+            checked={filters.car === null}
+            onChange={(e) =>
+              handleBooleanChange("car", e.target.checked ? "null" : "")
+            }
+          />
+        </Col>
+
+        <Col md={4}>
           <Form.Group controlId="filterCarName">
             <Form.Label>Car Name</Form.Label>
             <Form.Control
@@ -173,6 +184,7 @@ const HumanBeingsFilters: React.FC<HumanBeingsFiltersProps> = ({
               placeholder="Search by car name"
               value={filters.carName ?? ""}
               onChange={(e) => handleInputChange("carName", e.target.value)}
+              disabled={filters.car === null}
             />
           </Form.Group>
         </Col>
@@ -189,6 +201,7 @@ const HumanBeingsFilters: React.FC<HumanBeingsFiltersProps> = ({
                     : String(filters.carCool)
               }
               onChange={(e) => handleBooleanChange("carCool", e.target.value)}
+              disabled={filters.car === null}
             >
               <option value="">Any</option>
               <option value="true">Yes</option>

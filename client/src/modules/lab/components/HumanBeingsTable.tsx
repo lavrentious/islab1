@@ -66,13 +66,13 @@ const HumanBeingsTable: React.FC<HumanBeingsTableProps> = ({
       },
       {
         header: "Car",
-        accessorFn: (row) => row.car.name,
+        accessorFn: (row) => (row.car == null ? "—" : row.car.name),
         id: "car.name",
       },
       {
         header: "Cool Car",
         accessorFn: (row) =>
-          row.car.cool === null ? "—" : row.car.cool ? "Yes" : "No",
+          row.car?.cool == null ? "—" : row.car.cool ? "Yes" : "No",
         id: "car.cool",
       },
       {

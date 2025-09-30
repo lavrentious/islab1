@@ -36,7 +36,7 @@ class Car {
   name!: string; //Поле не может быть null
 
   @Property({ nullable: true, columnType: "boolean" })
-  cool?: boolean | null;
+  cool!: boolean | null;
 }
 
 @Entity()
@@ -71,20 +71,20 @@ export class HumanBeing {
   @Property({ nullable: true, columnType: "boolean" })
   hasToothpick?: boolean | null;
 
-  @Embedded(() => Car)
-  car!: Car;
+  @Embedded(() => Car, { nullable: true })
+  car!: Car | null;
 
   @Enum({ items: () => Mood, type: "string" })
   mood!: Mood;
 
   @Property({ columnType: "integer", nullable: true })
-  impactSpeed?: number | null;
+  impactSpeed!: number | null;
 
   @Property()
   soundtrackName!: string;
 
   @Property({ columnType: "integer", nullable: true })
-  minutesOfWaiting?: number | null;
+  minutesOfWaiting!: number | null;
 
   @Enum({ items: () => WeaponType, type: "string" })
   weaponType!: WeaponType;

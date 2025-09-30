@@ -58,6 +58,9 @@ export class LabService {
     if (params.soundtrackName !== undefined) {
       where.soundtrackName = { $ilike: `%${params.soundtrackName}%` };
     }
+    if (params.car !== undefined) {
+      where.car = params.car;
+    }
     if (params.carName !== undefined) {
       where.car = { ...where.car, name: { $ilike: `%${params.carName}%` } };
     }

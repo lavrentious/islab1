@@ -44,7 +44,7 @@ export class HumanBeing {
   creationDate!: Date;
   realHero!: boolean;
   hasToothpick?: boolean | null;
-  car!: Car;
+  car?: Car | null;
   mood!: Mood;
   impactSpeed?: number | null;
   soundtrackName!: string;
@@ -52,7 +52,18 @@ export class HumanBeing {
   weaponType!: WeaponType;
 }
 
-export type CreateHumanBeingDto = Omit<HumanBeing, "id" | "creationDate">;
+export class CreateHumanBeingDto {
+  name!: string;
+  coordinates!: Coordinates;
+  realHero?: boolean;
+  hasToothpick?: boolean | null;
+  car?: Car | null;
+  mood!: Mood;
+  impactSpeed?: number | null;
+  soundtrackName!: string;
+  minutesOfWaiting?: number | null;
+  weaponType!: WeaponType;
+}
 
 export class FindAllHumanbeingsQueryParamsDto extends PaginateParams {
   // filters
@@ -60,6 +71,7 @@ export class FindAllHumanbeingsQueryParamsDto extends PaginateParams {
   realHero?: boolean;
   hasToothpick?: boolean | null;
   mood?: Mood;
+  car?: null;
   carName?: string;
   carCool?: boolean | null;
   weaponType?: WeaponType;
