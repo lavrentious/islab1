@@ -2,6 +2,7 @@ import * as React from "react";
 import { Navbar as BootstrapNavbar, Container, Nav } from "react-bootstrap";
 import { FaCog, FaHome, FaSearch, FaPoo as Logo } from "react-icons/fa";
 import { Link } from "react-router";
+import VersionsStatus from "./VersionsStatus";
 
 const Navbar: React.FunctionComponent = () => {
   return (
@@ -38,6 +39,9 @@ const Navbar: React.FunctionComponent = () => {
                 <FaCog className="me-2" />
                 Settings
               </Nav.Link>
+            </div>
+            <div className="d-flex flex-wrap my-auto">
+              <VersionsStatus />
             </div>
           </Nav>
         </BootstrapNavbar.Collapse>
