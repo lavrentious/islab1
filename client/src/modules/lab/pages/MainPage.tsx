@@ -32,7 +32,7 @@ const MainPage = () => {
     paginate: true,
     ...filters,
     sortBy: sortBy ?? undefined,
-    sortOrder: sortAsc ? "ASC" : "DESC",
+    sortOrder: sortBy === null ? undefined : sortAsc ? "ASC" : "DESC",
   });
 
   const pollingIntervalId = useRef<ReturnType<typeof setInterval>>(null);
@@ -62,6 +62,9 @@ const MainPage = () => {
     if (item) {
       setSortBy(item.id as keyof HumanBeing);
       setSortAsc(item.desc);
+    } else {
+      setSortBy(null);
+      setSortAsc(false);
     }
   }, [sorting]);
 
