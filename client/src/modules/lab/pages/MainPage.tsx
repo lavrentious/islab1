@@ -1,5 +1,5 @@
 import { SortingState } from "@tanstack/react-table";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button, Container, Spinner } from "react-bootstrap";
 import toast from "react-hot-toast";
 import { BsPlusLg } from "react-icons/bs";
@@ -26,7 +26,7 @@ const MainPage = () => {
 
   const [sortBy, setSortBy] = useState<keyof HumanBeing | null>(null);
   const [sortAsc, setSortAsc] = useState(false);
-  const { data, isLoading } = useFindAllHumanBeingsQuery({
+  const { data, isLoading, refetch } = useFindAllHumanBeingsQuery({
     limit,
     page: page,
     paginate: true,
@@ -34,6 +34,21 @@ const MainPage = () => {
     sortBy: sortBy ?? undefined,
     sortOrder: sortAsc ? "ASC" : "DESC",
   });
+
+  const pollingIntervalId = useRef<ReturnType<typeof setInterval>>(null);
+  useEffect(() => {
+    if (pollingIntervalId.current) {
+      clearInterval(pollingIntervalId.current);
+    }
+    pollingIntervalId.current = setInterval(() => {
+      refetch();
+    }, 5000);
+    return () => {
+      if (pollingIntervalId.current) {
+        clearInterval(pollingIntervalId.current);
+      }
+    };
+  }, [refetch]);
 
   const [createHumanBeing, { isLoading: isCreating }] =
     useCreateHumanBeingMutation();
