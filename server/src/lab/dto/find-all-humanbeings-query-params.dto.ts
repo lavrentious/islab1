@@ -70,7 +70,8 @@ export class FindAllHumanbeingsQueryParamsDto extends PaginateParams {
     "carCool",
     "weaponType",
     "soundtrackName",
-  ])
+    "creationDate",
+  ] as (keyof HumanBeing)[])
   @IsString()
   sortBy?: keyof HumanBeing;
 

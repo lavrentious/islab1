@@ -6,6 +6,7 @@ import {
   SortingState,
   useReactTable,
 } from "@tanstack/react-table";
+import dayjs from "dayjs";
 import React, { useMemo } from "react";
 import { Button, Table } from "react-bootstrap";
 import { BiPencil } from "react-icons/bi";
@@ -32,6 +33,11 @@ const HumanBeingsTable: React.FC<HumanBeingsTableProps> = ({
       {
         header: "ID",
         accessorKey: "id",
+      },
+      {
+        header: "Created At",
+        accessorKey: "creationDate",
+        accessorFn: (row) => dayjs(row.creationDate).format("LLL"),
       },
       {
         header: "Name",
