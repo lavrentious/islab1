@@ -173,7 +173,7 @@ const HumanBeingsFilters: React.FC<HumanBeingsFiltersProps> = ({
         </Col>
 
         <Col md={4}>
-          <Form.Label>Has car?</Form.Label>
+          <Form.Label className="d-block">Has car?</Form.Label>
           <NullableCheckBox
             value={filters.hasCar}
             setValue={(value) =>

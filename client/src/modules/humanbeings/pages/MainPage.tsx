@@ -65,6 +65,7 @@ const MainPage = () => {
   return (
     <>
       <Container>
+        <h1>Human Beings</h1>
         {isLoading && (
           <Spinner
             className="d-block mx-auto my-5"
