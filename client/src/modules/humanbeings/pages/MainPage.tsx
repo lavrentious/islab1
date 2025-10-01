@@ -43,7 +43,8 @@ const MainPage = () => {
   const [createHumanBeing, { isLoading: isCreating }] =
     useCreateHumanBeingMutation();
   const [deleteHumanBeing] = useDeleteHumanBeingMutation();
-  const [updateHumanBeing] = useUpdateHumanBeingMutation();
+  const [updateHumanBeing, { isLoading: isUpdating }] =
+    useUpdateHumanBeingMutation();
 
   const [formModalShown, setFormModalShown] = useState(false);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -111,6 +112,7 @@ const MainPage = () => {
         />
       </Container>
       <HumanBeingFormModal
+        disabled={isLoading || isUpdating}
         existing={selectedHumanBeing}
         isShown={formModalShown}
         isLoading={isCreating}
@@ -122,17 +124,22 @@ const MainPage = () => {
               dto: humanBeing,
             })
               .unwrap()
-              .then(() => toast.success("Successfully updated"))
+              .then(() => {
+                toast.success("Successfully updated");
+                setFormModalShown(false);
+              })
               .catch((e) => toast.error(formatApiError(e)));
             setSelectedHumanBeing(null);
           } else {
             // create mode
             createHumanBeing(humanBeing)
               .unwrap()
-              .then(() => toast.success("Successfully created"))
+              .then(() => {
+                toast.success("Successfully created");
+                setFormModalShown(false);
+              })
               .catch((e) => toast.error(formatApiError(e)));
           }
-          setFormModalShown(false);
         }}
         onClose={() => setFormModalShown(false)}
       />

@@ -6,13 +6,13 @@ import { useFindOneCarQuery } from "src/modules/cars/api";
 import CarCard from "src/modules/cars/components/CarCard";
 import NullableCheckBox from "src/modules/common/components/NullableCheckBox";
 import * as Yup from "yup";
+import CarSelectModal from "../../cars/components/CarSelectModal";
 import {
   CreateHumanBeingDto,
   HumanBeing,
   Mood,
   WeaponType,
 } from "../api/types";
-import CarSelectModal from "./CarSelectModal";
 
 const RequiredMark = () => <span className="text-danger"> *</span>;
 
@@ -21,6 +21,7 @@ export interface HumanBeingFormProps {
   onSubmit: (humanBeing: CreateHumanBeingDto) => void;
   setIsValid?: (value: boolean) => void;
   formId?: string;
+  disabled?: boolean;
 }
 
 const validationSchema = Yup.object().shape({
@@ -61,6 +62,7 @@ const HumanBeingForm: React.FC<HumanBeingFormProps> = ({
   onSubmit,
   formId,
   setIsValid,
+  disabled,
 }) => {
   const formik = useFormik<CreateHumanBeingDto>({
     initialValues: {
@@ -100,7 +102,7 @@ const HumanBeingForm: React.FC<HumanBeingFormProps> = ({
 
   return (
     <>
-      <fieldset disabled={formik.isSubmitting}>
+      <fieldset disabled={disabled}>
         <Form id={formId ?? "humanBeingForm"} onSubmit={formik.handleSubmit}>
           <Form.Group className="mb-3">
             <Form.Label htmlFor="name">
@@ -251,7 +253,14 @@ const HumanBeingForm: React.FC<HumanBeingFormProps> = ({
               id="impactSpeed"
               type="number"
               placeholder="Enter impact speed"
-              onBlur={formik.handleBlur}
+              onBlur={(e) => {
+                const val = e.target.value;
+                formik.setFieldValue(
+                  "impactSpeed",
+                  val === "" ? null : Number(val),
+                );
+                formik.handleBlur(e);
+              }}
               value={formik.values.impactSpeed ?? ""}
               onChange={formik.handleChange}
               isInvalid={
@@ -289,7 +298,14 @@ const HumanBeingForm: React.FC<HumanBeingFormProps> = ({
               id="minutesOfWaiting"
               placeholder="Enter minutes of waiting"
               type="number"
-              onBlur={formik.handleBlur}
+              onBlur={(e) => {
+                const val = e.target.value;
+                formik.setFieldValue(
+                  "minutesOfWaiting",
+                  val === "" ? null : Number(val),
+                );
+                formik.handleBlur(e);
+              }}
               value={formik.values.minutesOfWaiting ?? ""}
               onChange={formik.handleChange}
               isInvalid={
