@@ -199,7 +199,7 @@ const HumanBeingsTable: React.FC<HumanBeingsTableProps> = ({
             ))
           ) : (
             <tr>
-              <td colSpan={columns.length} className="text-center">
+              <td colSpan={columns.length + 2} className="text-center">
                 No results found
               </td>
             </tr>
