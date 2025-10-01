@@ -199,7 +199,10 @@ const HumanBeingsTable: React.FC<HumanBeingsTableProps> = ({
                   <Button
                     size="sm"
                     variant="outline-danger"
-                    onClick={() => onRowDelete?.(row.original)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRowDelete?.(row.original);
+                    }}
                   >
                     <FaTrash />
                   </Button>
@@ -208,7 +211,10 @@ const HumanBeingsTable: React.FC<HumanBeingsTableProps> = ({
                   <Button
                     size="sm"
                     variant="outline-secondary"
-                    onClick={() => onRowEdit?.(row.original)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRowEdit?.(row.original);
+                    }}
                   >
                     <FaPencil />
                   </Button>
