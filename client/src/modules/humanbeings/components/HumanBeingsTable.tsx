@@ -182,8 +182,9 @@ const HumanBeingsTable: React.FC<HumanBeingsTableProps> = ({
               <tr
                 key={row.id}
                 onClick={() =>
-                  onRowSelect?.(row.original) ??
-                  navigate(`/humanbeings/${row.original.id}`)
+                  onRowSelect
+                    ? onRowSelect(row.original)
+                    : navigate(`/humanbeings/${row.original.id}`)
                 }
                 style={{
                   cursor: "pointer",

@@ -95,8 +95,9 @@ const CarsTable: React.FC<CarsTableProps> = ({
               <tr
                 key={row.id}
                 onClick={() =>
-                  onRowSelect?.(row.original) ||
-                  navigate(`/cars/${row.original.id}`)
+                  onRowSelect
+                    ? onRowSelect(row.original)
+                    : navigate(`/cars/${row.original.id}`)
                 }
                 style={{ cursor: "pointer" }}
               >
