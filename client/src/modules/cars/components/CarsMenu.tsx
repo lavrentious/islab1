@@ -17,10 +17,10 @@ import CarsFilters from "../components/CarsFilters";
 import CarsTable from "../components/CarsTable";
 
 export interface CarsMenuProps {
-  onSelect?: (car: Car) => void; // if a new is created or existing selected
+  onCarSelect?: (car: Car) => void; // if a new is created or existing selected
 }
 
-const CarsMenu: React.FC<CarsMenuProps> = ({ onSelect }) => {
+const CarsMenu: React.FC<CarsMenuProps> = ({ onCarSelect }) => {
   const [page, setPage] = useState(1);
   const limit = 5;
 
@@ -98,7 +98,7 @@ const CarsMenu: React.FC<CarsMenuProps> = ({ onSelect }) => {
               setEditingCar(item);
               setFormModalShown(true);
             }}
-            onSelect={onSelect}
+            onRowSelect={onCarSelect}
           />
         </>
       )}
@@ -132,7 +132,7 @@ const CarsMenu: React.FC<CarsMenuProps> = ({ onSelect }) => {
               .unwrap()
               .then((car) => {
                 toast.success("Successfully created");
-                onSelect?.(car);
+                onCarSelect?.(car);
               })
               .catch((e) => toast.error(formatApiError(e)));
           }

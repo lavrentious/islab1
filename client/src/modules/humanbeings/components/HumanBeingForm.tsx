@@ -344,7 +344,7 @@ const HumanBeingForm: React.FC<HumanBeingFormProps> = ({
       <CarSelectModal
         isShown={carSelectModalShown}
         onClose={() => setCarSelectModalShown(false)}
-        onSelect={(car) => {
+        onCarSelect={(car) => {
           formik.setFieldValue("car", car.id);
           setCarSelectModalShown(false);
         }}

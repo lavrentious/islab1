@@ -73,6 +73,7 @@ export const humanBeingsApi = createApi({
 });
 
 export const {
+  useFindOneHumanBeingQuery,
   useFindAllHumanBeingsQuery,
   useCreateHumanBeingMutation,
   useDeleteHumanBeingMutation,

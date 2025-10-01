@@ -11,6 +11,7 @@ import React, { useMemo } from "react";
 import { Button, Spinner, Table } from "react-bootstrap";
 import { FaTrash } from "react-icons/fa";
 import { FaPencil } from "react-icons/fa6";
+import { useNavigate } from "react-router";
 import { useFindOneCarQuery } from "src/modules/cars/api";
 import { HumanBeing } from "../api/types";
 
@@ -20,6 +21,7 @@ interface HumanBeingsTableProps {
   setSorting?: OnChangeFn<SortingState>;
   onRowEdit?: (item: HumanBeing) => void;
   onRowDelete?: (item: HumanBeing) => void;
+  onRowSelect?: (item: HumanBeing) => void;
 }
 
 export const CarIdCell: React.FC<{ id: number | null }> = ({ id }) => {
@@ -56,12 +58,18 @@ const HumanBeingsTable: React.FC<HumanBeingsTableProps> = ({
   setSorting,
   onRowDelete,
   onRowEdit,
+  onRowSelect,
 }) => {
+  const navigate = useNavigate();
+
   const columns = useMemo<ColumnDef<HumanBeing>[]>(
     () => [
       {
         header: "ID",
         accessorKey: "id",
+        cell: ({ row }) => (
+          <a href={`/humanbeings/${row.original.id}`}>{row.original.id}</a>
+        ),
       },
       {
         header: "Created At",
@@ -171,7 +179,16 @@ const HumanBeingsTable: React.FC<HumanBeingsTableProps> = ({
         <tbody>
           {table.getRowModel().rows.length > 0 ? (
             table.getRowModel().rows.map((row) => (
-              <tr key={row.id}>
+              <tr
+                key={row.id}
+                onClick={() =>
+                  onRowSelect?.(row.original) ??
+                  navigate(`/humanbeings/${row.original.id}`)
+                }
+                style={{
+                  cursor: "pointer",
+                }}
+              >
                 {row.getVisibleCells().map((cell) => (
                   <td key={cell.id}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

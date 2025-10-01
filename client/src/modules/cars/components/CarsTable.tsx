@@ -9,6 +9,7 @@ import {
 import React, { useMemo } from "react";
 import { Button, Table } from "react-bootstrap";
 import { FaPencil, FaTrash } from "react-icons/fa6";
+import { useNavigate } from "react-router";
 import { Car } from "../api/types";
 
 interface CarsTableProps {
@@ -18,7 +19,7 @@ interface CarsTableProps {
   onRowEdit?: (item: Car) => void;
   onRowDelete?: (item: Car) => void;
   isLoading?: boolean;
-  onSelect?: (car: Car) => void; // click to select
+  onRowSelect?: (car: Car) => void; // click to select
 }
 
 const CarsTable: React.FC<CarsTableProps> = ({
@@ -28,13 +29,18 @@ const CarsTable: React.FC<CarsTableProps> = ({
   onRowEdit,
   onRowDelete,
   isLoading,
-  onSelect,
+  onRowSelect,
 }) => {
+  const navigate = useNavigate();
+
   const columns = useMemo<ColumnDef<Car>[]>(
     () => [
       {
         header: "ID",
         accessorKey: "id",
+        cell: ({ row }) => (
+          <a href={`/cars/${row.original.id}`}>{row.original.id}</a>
+        ),
       },
       {
         header: "Name",
@@ -88,8 +94,11 @@ const CarsTable: React.FC<CarsTableProps> = ({
             table.getRowModel().rows.map((row) => (
               <tr
                 key={row.id}
-                onClick={() => onSelect?.(row.original)}
-                style={{ cursor: onSelect ? "pointer" : "unset" }}
+                onClick={() =>
+                  onRowSelect?.(row.original) ||
+                  navigate(`/cars/${row.original.id}`)
+                }
+                style={{ cursor: "pointer" }}
               >
                 {row.getVisibleCells().map((cell) => (
                   <td key={cell.id}>
