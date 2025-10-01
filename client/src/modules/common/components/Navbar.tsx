@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Navbar as BootstrapNavbar, Container, Nav } from "react-bootstrap";
-import { FaCar, FaCog, FaHome, FaPoo as Logo } from "react-icons/fa";
+import { FaCar, FaCog, FaHome } from "react-icons/fa";
+import { TbPrison as Logo } from "react-icons/tb";
 import { Link } from "react-router";
 import VersionsStatus from "./VersionsStatus";
 
