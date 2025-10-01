@@ -66,7 +66,7 @@ const CarForm: React.FC<CarFormProps> = ({
           </Form.Group>
 
           <Form.Group>
-            <Form.Label>Cool</Form.Label>
+            <Form.Label className="d-block">Cool</Form.Label>
             <NullableCheckBox
               value={formik.values.cool}
               setValue={(value) => formik.setFieldValue("cool", value)}
@@ -76,8 +76,6 @@ const CarForm: React.FC<CarFormProps> = ({
           </Form.Group>
         </Form>
       </fieldset>
-
-      <pre>{JSON.stringify(formik.errors, null, 2)}</pre>
     </>
   );
 };
