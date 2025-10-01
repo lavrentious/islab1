@@ -19,11 +19,6 @@ class Coordinates {
   y!: number; // int
 }
 
-class Car {
-  name!: string; //Поле не может быть null
-  cool?: boolean | null;
-}
-
 export class HumanBeing {
   // private Long id; //Поле не может быть null, Значение поля должно быть больше 0, Значение этого поля должно быть уникальным, Значение этого поля должно генерироваться автоматически
   // private String name; //Поле не может быть null, Строка не может быть пустой
@@ -44,11 +39,11 @@ export class HumanBeing {
   creationDate!: Date;
   realHero!: boolean;
   hasToothpick?: boolean | null;
-  car?: Car | null;
+  car!: number | null;
   mood!: Mood;
-  impactSpeed?: number | null;
+  impactSpeed!: number | null;
   soundtrackName!: string;
-  minutesOfWaiting?: number | null;
+  minutesOfWaiting!: number | null;
   weaponType!: WeaponType;
 }
 
@@ -57,7 +52,7 @@ export class CreateHumanBeingDto {
   coordinates!: Coordinates;
   realHero?: boolean;
   hasToothpick?: boolean | null;
-  car?: Car | null;
+  car?: number | null;
   mood!: Mood;
   impactSpeed?: number | null;
   soundtrackName!: string;
@@ -71,13 +66,25 @@ export class FindAllHumanbeingsQueryParamsDto extends PaginateParams {
   realHero?: boolean;
   hasToothpick?: boolean | null;
   mood?: Mood;
-  car?: null;
+  hasCar?: boolean;
   carName?: string;
   carCool?: boolean | null;
   weaponType?: WeaponType;
   soundtrackName?: string;
 
   // sorting
-  sortBy?: keyof HumanBeing;
+  sortBy?:
+    | "id"
+    | "name"
+    | "realHero"
+    | "hasToothpick"
+    | "mood"
+    | "car.name"
+    | "car.cool"
+    | "weaponType"
+    | "soundtrackName"
+    | "creationDate"
+    | "coordinates_x"
+    | "coordinates_y";
   sortOrder?: "ASC" | "DESC";
 }

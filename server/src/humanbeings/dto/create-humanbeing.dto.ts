@@ -11,9 +11,9 @@ import {
   IsString,
   ValidateNested,
 } from "class-validator";
-import { Mood, WeaponType } from "../entities/humanbeing";
+import { Mood, WeaponType } from "../entities/humanbeing.entity";
 
-class CoordinatesDto {
+export class CoordinatesDto {
   @ApiProperty({ example: 12.34, description: "X coordinate (float)" })
   @IsNumber()
   x!: number;
@@ -21,20 +21,6 @@ class CoordinatesDto {
   @ApiProperty({ example: 42, description: "Y coordinate (int)" })
   @IsInt()
   y!: number;
-}
-
-class CarDto {
-  @ApiProperty({ example: "honda civic", description: "Car name" })
-  @IsString()
-  name!: string;
-
-  @ApiPropertyOptional({
-    example: true,
-    description: "Whether the car is cool",
-  })
-  @IsBoolean()
-  @IsOptional()
-  cool?: boolean | null;
 }
 
 export class CreateHumanBeingDto {
@@ -61,12 +47,10 @@ export class CreateHumanBeingDto {
   @IsBoolean()
   hasToothpick?: boolean | null;
 
-  @ApiProperty({ type: CarDto })
-  @ValidateNested()
-  @Type(() => CarDto)
+  @ApiPropertyOptional({ example: 1, description: "Existing car ID" })
   @IsOptional()
-  @IsObject()
-  car?: CarDto | null;
+  @IsInt()
+  car?: number;
 
   @ApiProperty({ enum: Mood, description: "Current mood" })
   @IsEnum(Mood)

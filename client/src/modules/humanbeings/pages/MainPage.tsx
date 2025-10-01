@@ -1,8 +1,8 @@
 import { SortingState } from "@tanstack/react-table";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Container, Spinner } from "react-bootstrap";
 import toast from "react-hot-toast";
-import { BsPlusLg } from "react-icons/bs";
+import { FaPlus } from "react-icons/fa";
 import { formatApiError } from "src/modules/common/api/utils";
 import { Paginator } from "src/modules/common/components/Paginator";
 import {
@@ -18,37 +18,27 @@ import HumanBeingsTable from "../components/HumanBeingsTable";
 
 const MainPage = () => {
   const [page, setPage] = useState(1);
-  const [limit] = useState(5);
+  const limit = 5;
 
   const [filters, setFilters] = useState<
     Partial<FindAllHumanbeingsQueryParamsDto>
   >({});
 
-  const [sortBy, setSortBy] = useState<keyof HumanBeing | null>(null);
+  const [sortBy, setSortBy] = useState<
+    FindAllHumanbeingsQueryParamsDto["sortBy"] | null
+  >(null);
   const [sortAsc, setSortAsc] = useState(false);
-  const { data, isLoading, refetch } = useFindAllHumanBeingsQuery({
-    limit,
-    page: page,
-    paginate: true,
-    ...filters,
-    sortBy: sortBy ?? undefined,
-    sortOrder: sortBy === null ? undefined : sortAsc ? "ASC" : "DESC",
-  });
-
-  const pollingIntervalId = useRef<ReturnType<typeof setInterval>>(null);
-  useEffect(() => {
-    if (pollingIntervalId.current) {
-      clearInterval(pollingIntervalId.current);
-    }
-    pollingIntervalId.current = setInterval(() => {
-      refetch();
-    }, 5000);
-    return () => {
-      if (pollingIntervalId.current) {
-        clearInterval(pollingIntervalId.current);
-      }
-    };
-  }, [refetch]);
+  const { data, isLoading } = useFindAllHumanBeingsQuery(
+    {
+      limit,
+      page: page,
+      paginate: true,
+      ...filters,
+      sortBy: sortBy ?? undefined,
+      sortOrder: sortBy === null ? undefined : sortAsc ? "ASC" : "DESC",
+    },
+    { pollingInterval: 5000 },
+  );
 
   const [createHumanBeing, { isLoading: isCreating }] =
     useCreateHumanBeingMutation();
@@ -60,7 +50,7 @@ const MainPage = () => {
   useEffect(() => {
     const item = sorting[0];
     if (item) {
-      setSortBy(item.id as keyof HumanBeing);
+      setSortBy(item.id as FindAllHumanbeingsQueryParamsDto["sortBy"]);
       setSortAsc(item.desc);
     } else {
       setSortBy(null);
@@ -82,7 +72,7 @@ const MainPage = () => {
           />
         )}
         <Button onClick={() => setFormModalShown(true)}>
-          <BsPlusLg /> Create
+          <FaPlus /> Create
         </Button>
         <hr />
         <HumanBeingsFilters disabled={isLoading} onChange={setFilters} />

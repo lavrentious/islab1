@@ -3,8 +3,14 @@ import {
   EntityManager,
   EntityRepository,
   FilterQuery,
+  Loaded,
 } from "@mikro-orm/postgresql";
-import { Injectable, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
+import { Car } from "src/cars/entities/car.entity";
 import { PaginateResponse } from "src/common/dto/pagination.dto";
 import {
   calculateTotalPages,
@@ -12,8 +18,9 @@ import {
 } from "src/common/utils/pagination.utils";
 import { CreateHumanBeingDto } from "./dto/create-humanbeing.dto";
 import { FindAllHumanbeingsQueryParamsDto } from "./dto/find-all-humanbeings-query-params.dto";
+import { HumanBeingDto } from "./dto/humanbeing.dto";
 import { UpdateHumanBeingDto } from "./dto/update-humanbeing.dto";
-import { HumanBeing } from "./entities/humanbeing";
+import { HumanBeing } from "./entities/humanbeing.entity";
 
 @Injectable()
 export class HumanBeingsService {
@@ -23,18 +30,32 @@ export class HumanBeingsService {
     private readonly repo: EntityRepository<HumanBeing>,
   ) {}
 
-  async create(dto: CreateHumanBeingDto): Promise<HumanBeing> {
-    const humanBeing = this.repo.create(dto as Omit<HumanBeing, "id">);
+  async create(dto: CreateHumanBeingDto): Promise<HumanBeingDto> {
+    let car: Car | null = null;
+    if (dto.car) {
+      car = await this.em.findOneOrFail(
+        Car,
+        { id: dto.car },
+        {
+          failHandler: () =>
+            new BadRequestException(`Car #${dto.car} not found`),
+        },
+      );
+    }
+
+    const humanBeing = this.repo.create({ ...dto, car } as Omit<
+      HumanBeing,
+      "id"
+    >);
     await this.em.flush();
 
-    return humanBeing;
+    return this.findOneOrFail(humanBeing.id);
   }
 
   async findAll(
     params: FindAllHumanbeingsQueryParamsDto,
-  ): Promise<PaginateResponse<HumanBeing>> {
+  ): Promise<PaginateResponse<HumanBeingDto>> {
     const paginateQuery = paginateParamsToQuery<HumanBeing>(params);
-    const totalItems = await this.repo.count();
 
     // filtering
     const where: FilterQuery<HumanBeing> = {};
@@ -56,14 +77,18 @@ export class HumanBeingsService {
     if (params.soundtrackName !== undefined) {
       where.soundtrackName = { $ilike: `%${params.soundtrackName}%` };
     }
-    if (params.car !== undefined) {
-      where.car = params.car;
+    if (params.hasCar !== undefined) {
+      if (params.hasCar) {
+        where.car = { $ne: null };
+      } else {
+        where.car = null;
+      }
     }
-    if (params.carName !== undefined) {
-      where.car = { ...where.car, name: { $ilike: `%${params.carName}%` } };
+    if (params.hasCar !== false && params.carName !== undefined) {
+      where.car = { name: { $ilike: `%${params.carName}%` } };
     }
-    if (params.carCool !== undefined) {
-      where.car = { ...where.car, cool: params.carCool };
+    if (params.hasCar !== false && params.carCool !== undefined) {
+      where.car = { ...(where.car as Partial<Car>), cool: params.carCool };
     }
 
     // sorting
@@ -77,19 +102,21 @@ export class HumanBeingsService {
         ...paginateQuery,
         where,
         orderBy,
+        populate: ["car"],
       });
     } else {
       items = await this.repo.findAll({ where, orderBy });
     }
 
     // pagination
+    const totalItems = items.length;
     const limit = params.limit ?? totalItems;
     const page = params.page ?? 1;
     const totalPages = calculateTotalPages(totalItems, limit);
 
     // res
     return {
-      items,
+      items: items.map((item) => new HumanBeingDto(item)),
       limit,
       page,
       totalItems,
@@ -97,25 +124,56 @@ export class HumanBeingsService {
     };
   }
 
-  async findOne(id: number): Promise<HumanBeing | null> {
-    return this.repo.findOne({ id });
+  async findOne(id: number): Promise<HumanBeingDto | null> {
+    const entity = await this.repo.findOne({ id });
+    return entity ? new HumanBeingDto(entity) : null;
   }
 
-  async findOneOrFail(id: number): Promise<HumanBeing> {
-    return this.repo.findOneOrFail(
+  async findOneOrFail(id: number): Promise<HumanBeingDto> {
+    const entity = await this.repo.findOneOrFail(
       { id },
       {
         failHandler: () =>
           new NotFoundException(`Human being #${id} not found`),
       },
     );
+    return new HumanBeingDto(entity);
   }
 
-  async update(id: number, dto: UpdateHumanBeingDto) {
-    const entity = await this.repo.findOneOrFail({ id });
-    this.repo.assign(entity, dto);
+  async update(id: number, dto: UpdateHumanBeingDto): Promise<HumanBeingDto> {
+    if (!dto || Object.keys(dto).length === 0) {
+      throw new BadRequestException("Request body cannot be empty");
+    }
+
+    const entity = await this.repo.findOneOrFail(
+      { id },
+      {
+        failHandler: () =>
+          new NotFoundException(`Human being #${id} not found`),
+      },
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { car: _, ...rest } = dto;
+    const data: Partial<Loaded<HumanBeing>> = { ...rest };
+    if (dto.car !== undefined) {
+      if (!dto.car) {
+        data.car = null;
+      } else {
+        data.car = await this.em.findOneOrFail(
+          Car,
+          { id: dto.car },
+          {
+            failHandler: () =>
+              new BadRequestException(`Car #${dto.car} not found`),
+          },
+        );
+      }
+    }
+
+    this.repo.assign(entity, data);
     await this.em.flush();
-    return entity;
+    return new HumanBeingDto(entity);
   }
 
   async exists(id: number): Promise<boolean> {

@@ -8,3 +8,12 @@ export function nullableBooleanFromString(
   if (s === "false") return false;
   return s;
 }
+
+export function booleanFromString(
+  s: string | boolean | undefined | null,
+): string | boolean | undefined | null {
+  if (typeof s === "boolean") return s;
+  if (s === "true") return true;
+  if (s === "false") return false;
+  return s;
+}

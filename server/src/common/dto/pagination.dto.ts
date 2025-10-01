@@ -1,4 +1,4 @@
-import { ApiPropertyOptional } from "@nestjs/swagger";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { Transform } from "class-transformer";
 import { IsNumber, IsOptional, Min, ValidateIf } from "class-validator";
 
@@ -29,9 +29,18 @@ export class PaginateParams {
 }
 
 export class PaginateResponse<T> {
+  @ApiProperty() // FIXMIE
   items: T[];
+
+  @ApiProperty()
   limit: number;
+
+  @ApiProperty()
   page: number;
+
+  @ApiProperty()
   totalItems: number;
+
+  @ApiProperty()
   totalPages: number;
 }

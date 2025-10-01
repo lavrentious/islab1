@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Navbar as BootstrapNavbar, Container, Nav } from "react-bootstrap";
-import { FaCog, FaHome, FaSearch, FaPoo as Logo } from "react-icons/fa";
+import { FaCar, FaCog, FaHome, FaPoo as Logo } from "react-icons/fa";
 import { Link } from "react-router";
 import VersionsStatus from "./VersionsStatus";
 
@@ -31,9 +31,9 @@ const Navbar: React.FunctionComponent = () => {
                 <FaHome className="me-2" />
                 Home
               </Nav.Link>
-              <Nav.Link as={Link} to="/lobby">
-                <FaSearch className="me-2" />
-                Search lobbies
+              <Nav.Link as={Link} to="/cars">
+                <FaCar className="me-2" />
+                Cars
               </Nav.Link>
               <Nav.Link as={Link} to="/settings">
                 <FaCog className="me-2" />

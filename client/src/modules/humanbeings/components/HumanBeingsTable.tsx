@@ -8,9 +8,10 @@ import {
 } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import React, { useMemo } from "react";
-import { Button, Table } from "react-bootstrap";
-import { BiPencil } from "react-icons/bi";
-import { BsTrash } from "react-icons/bs";
+import { Button, Spinner, Table } from "react-bootstrap";
+import { FaTrash } from "react-icons/fa";
+import { FaPencil } from "react-icons/fa6";
+import { useFindOneCarQuery } from "src/modules/cars/api";
 import { HumanBeing } from "../api/types";
 
 interface HumanBeingsTableProps {
@@ -20,6 +21,34 @@ interface HumanBeingsTableProps {
   onRowEdit?: (item: HumanBeing) => void;
   onRowDelete?: (item: HumanBeing) => void;
 }
+
+export const CarIdCell: React.FC<{ id: number | null }> = ({ id }) => {
+  return <>{id ?? "—"}</>;
+};
+
+export const CarNameCell: React.FC<{ id: number | null }> = ({ id }) => {
+  const { data: car, isLoading } = useFindOneCarQuery(id!, {
+    skip: id == null,
+    pollingInterval: 5000,
+  });
+
+  if (id == null) return <>N/A</>;
+  if (isLoading) return <Spinner size="sm" />;
+
+  return <>{car?.name ?? "—"}</>;
+};
+
+export const CarCoolCell: React.FC<{ id: number | null }> = ({ id }) => {
+  const { data: car, isLoading } = useFindOneCarQuery(id!, {
+    skip: id == null,
+    pollingInterval: 5000,
+  });
+
+  if (id == null) return <>N/A</>;
+  if (isLoading) return <Spinner size="sm" />;
+
+  return <>{car?.cool == null ? "—" : car.cool ? "Yes" : "No"}</>;
+};
 
 const HumanBeingsTable: React.FC<HumanBeingsTableProps> = ({
   items,
@@ -45,13 +74,13 @@ const HumanBeingsTable: React.FC<HumanBeingsTableProps> = ({
       },
       {
         header: "X",
+        id: "coordinates_x",
         accessorFn: (row) => row.coordinates.x,
-        id: "coordinates.x",
       },
       {
         header: "Y",
+        id: "coordinates_y",
         accessorFn: (row) => row.coordinates.y,
-        id: "coordinates.y",
       },
       {
         header: "Real Hero",
@@ -65,15 +94,19 @@ const HumanBeingsTable: React.FC<HumanBeingsTableProps> = ({
         id: "hasToothpick",
       },
       {
-        header: "Car",
-        accessorFn: (row) => (row.car == null ? "—" : row.car.name),
-        id: "car.name",
+        header: "Car ID",
+        id: "car.id",
+        cell: ({ row }) => <CarIdCell id={row.original.car} />,
       },
       {
-        header: "Cool Car",
-        accessorFn: (row) =>
-          row.car?.cool == null ? "—" : row.car.cool ? "Yes" : "No",
+        header: "Car Name",
+        id: "car.name",
+        cell: ({ row }) => <CarNameCell id={row.original.car} />,
+      },
+      {
+        header: "Car Cool?",
         id: "car.cool",
+        cell: ({ row }) => <CarCoolCell id={row.original.car} />,
       },
       {
         header: "Mood",
@@ -150,7 +183,7 @@ const HumanBeingsTable: React.FC<HumanBeingsTableProps> = ({
                     variant="outline-danger"
                     onClick={() => onRowDelete?.(row.original)}
                   >
-                    <BsTrash />
+                    <FaTrash />
                   </Button>
                 </td>
                 <td>
@@ -159,7 +192,7 @@ const HumanBeingsTable: React.FC<HumanBeingsTableProps> = ({
                     variant="outline-secondary"
                     onClick={() => onRowEdit?.(row.original)}
                   >
-                    <BiPencil />
+                    <FaPencil />
                   </Button>
                 </td>
               </tr>

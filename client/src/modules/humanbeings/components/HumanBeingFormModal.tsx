@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Button, Modal } from "react-bootstrap";
-import { BsCheckLg, BsXLg } from "react-icons/bs";
+import { FaCheck } from "react-icons/fa";
+import { FaX } from "react-icons/fa6";
 import LoadingButton from "src/modules/common/components/LoadingButton";
 import HumanBeingForm, { HumanBeingFormProps } from "./HumanBeingForm";
 
@@ -23,7 +24,9 @@ const HumanBeingFormModal: React.FC<HumanBeingFormModalProps> = ({
   return (
     <Modal show={isShown} onHide={onClose}>
       <Modal.Header closeButton>
-        <Modal.Title>Modal heading</Modal.Title>
+        <Modal.Title>
+          {props.existing ? "Update" : "Create"} Human Being
+        </Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <HumanBeingForm formId={formId} setIsValid={setIsValid} {...props} />
@@ -36,10 +39,10 @@ const HumanBeingFormModal: React.FC<HumanBeingFormModalProps> = ({
           form={formId}
           disabled={!isValid}
         >
-          <BsCheckLg /> Submit
+          <FaCheck /> Submit
         </LoadingButton>
         <Button variant="secondary" onClick={onClose}>
-          <BsXLg /> Close
+          <FaX /> Close
         </Button>
       </Modal.Footer>
     </Modal>

@@ -3,9 +3,11 @@ import {
   Embedded,
   Entity,
   Enum,
+  ManyToOne,
   PrimaryKey,
   Property,
 } from "@mikro-orm/core";
+import { Car } from "../../cars/entities/car.entity";
 
 export enum Mood {
   SADNESS = "SADNESS",
@@ -28,15 +30,6 @@ class Coordinates {
 
   @Property({ columnType: "integer" })
   y!: number; // int
-}
-
-@Embeddable()
-class Car {
-  @Property()
-  name!: string; //Поле не может быть null
-
-  @Property({ nullable: true, columnType: "boolean" })
-  cool!: boolean | null;
 }
 
 @Entity()
@@ -69,22 +62,22 @@ export class HumanBeing {
   realHero!: boolean;
 
   @Property({ nullable: true, columnType: "boolean" })
-  hasToothpick?: boolean | null;
+  hasToothpick: boolean | null = null;
 
-  @Embedded(() => Car, { nullable: true })
-  car!: Car | null;
+  @ManyToOne({ entity: () => Car, nullable: true })
+  car: Car | null = null;
 
   @Enum({ items: () => Mood, type: "string" })
   mood!: Mood;
 
   @Property({ columnType: "integer", nullable: true })
-  impactSpeed!: number | null;
+  impactSpeed: number | null = null;
 
   @Property()
   soundtrackName!: string;
 
   @Property({ columnType: "integer", nullable: true })
-  minutesOfWaiting!: number | null;
+  minutesOfWaiting: number | null = null;
 
   @Enum({ items: () => WeaponType, type: "string" })
   weaponType!: WeaponType;

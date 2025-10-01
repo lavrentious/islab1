@@ -4,6 +4,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
+import { CarsModule } from "./cars/cars.module";
 import { EnvironmentVariables, validate } from "./env.validation";
 import { HumanBeingsModule } from "./humanbeings/humanbeings.module";
 
@@ -32,6 +33,7 @@ import { HumanBeingsModule } from "./humanbeings/humanbeings.module";
       driver: PostgreSqlDriver,
     }),
     HumanBeingsModule,
+    CarsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -25,6 +25,65 @@
           "length": 255,
           "mappedType": "string"
         },
+        "cool": {
+          "name": "cool",
+          "type": "boolean",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "boolean"
+        }
+      },
+      "name": "car",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "name"
+          ],
+          "composite": false,
+          "keyName": "car_name_unique",
+          "constraint": true,
+          "primary": false,
+          "unique": true
+        },
+        {
+          "keyName": "car_pkey",
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": true,
+          "primary": true,
+          "unique": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {}
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "unsigned": false,
+          "autoincrement": true,
+          "primary": true,
+          "nullable": false,
+          "mappedType": "integer"
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "length": 255,
+          "mappedType": "string"
+        },
         "coordinates_x": {
           "name": "coordinates_x",
           "type": "double precision",
@@ -71,24 +130,14 @@
           "nullable": true,
           "mappedType": "boolean"
         },
-        "car_name": {
-          "name": "car_name",
-          "type": "varchar(255)",
+        "car_id": {
+          "name": "car_id",
+          "type": "int",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
-          "length": 255,
-          "mappedType": "string"
-        },
-        "car_cool": {
-          "name": "car_cool",
-          "type": "boolean",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": true,
-          "mappedType": "boolean"
+          "mappedType": "integer"
         },
         "mood": {
           "name": "mood",
@@ -164,7 +213,22 @@
         }
       ],
       "checks": [],
-      "foreignKeys": {},
+      "foreignKeys": {
+        "human_being_car_id_foreign": {
+          "constraintName": "human_being_car_id_foreign",
+          "columnNames": [
+            "car_id"
+          ],
+          "localTableName": "public.human_being",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "public.car",
+          "createForeignKeyConstraint": true,
+          "deleteRule": "set null",
+          "updateRule": "cascade"
+        }
+      },
       "nativeEnums": {}
     }
   ],

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Button, Col, Form, Row } from "react-bootstrap";
+import NullableCheckBox from "src/modules/common/components/NullableCheckBox";
 import {
   FindAllHumanbeingsQueryParamsDto,
   Mood,
@@ -60,7 +61,13 @@ const HumanBeingsFilters: React.FC<HumanBeingsFiltersProps> = ({
   };
 
   return (
-    <Form className="mb-3 p-3 border rounded bg-light">
+    <Form
+      className="mb-3 p-3 border rounded bg-light"
+      onSubmit={(e) => {
+        e.preventDefault();
+        applyFilters();
+      }}
+    >
       <Row className="g-2">
         <Col md={4}>
           <Form.Group controlId="filterName">
@@ -166,12 +173,11 @@ const HumanBeingsFilters: React.FC<HumanBeingsFiltersProps> = ({
         </Col>
 
         <Col md={4}>
-          <Form.Check
-            type="checkbox"
-            label="No Car"
-            checked={filters.car === null}
-            onChange={(e) =>
-              handleBooleanChange("car", e.target.checked ? "null" : "")
+          <Form.Label>Has car?</Form.Label>
+          <NullableCheckBox
+            value={filters.hasCar}
+            setValue={(value) =>
+              handleBooleanChange("hasCar", value === null ? "" : String(value))
             }
           />
         </Col>
@@ -184,7 +190,7 @@ const HumanBeingsFilters: React.FC<HumanBeingsFiltersProps> = ({
               placeholder="Search by car name"
               value={filters.carName ?? ""}
               onChange={(e) => handleInputChange("carName", e.target.value)}
-              disabled={filters.car === null}
+              disabled={filters.hasCar === false}
             />
           </Form.Group>
         </Col>
@@ -201,7 +207,7 @@ const HumanBeingsFilters: React.FC<HumanBeingsFiltersProps> = ({
                     : String(filters.carCool)
               }
               onChange={(e) => handleBooleanChange("carCool", e.target.value)}
-              disabled={filters.car === null}
+              disabled={filters.hasCar === false}
             >
               <option value="">Any</option>
               <option value="true">Yes</option>
