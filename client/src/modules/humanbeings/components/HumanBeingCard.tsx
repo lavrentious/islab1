@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Card, ListGroup } from "react-bootstrap";
 import { useFindOneCarQuery } from "src/modules/cars/api";
 import CarCard from "src/modules/cars/components/CarCard";
@@ -15,9 +15,14 @@ const HumanBeingCard: React.FC<HumanBeingCardProps> = ({
   link,
   carLink,
 }) => {
-  const { data: car } = useFindOneCarQuery(humanBeing.car!, {
+  const { data: fetchedCar } = useFindOneCarQuery(humanBeing.car!, {
     skip: humanBeing.car == null,
+    pollingInterval: 5000,
   });
+  const car = useMemo(
+    () => (humanBeing.car === null ? null : fetchedCar),
+    [fetchedCar, humanBeing.car],
+  );
 
   return (
     <Card>

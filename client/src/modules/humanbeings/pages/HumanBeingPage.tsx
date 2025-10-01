@@ -21,7 +21,7 @@ const HumanBeingPage = () => {
     data: humanBeing,
     isLoading,
     error,
-  } = useFindOneHumanBeingQuery(+id!, {});
+  } = useFindOneHumanBeingQuery(+id!, { pollingInterval: 5000 });
   const [deleteHumanBeing] = useDeleteHumanBeingMutation();
   const [updateHumanBeing] = useUpdateHumanBeingMutation();
 
