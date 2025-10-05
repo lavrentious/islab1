@@ -1,6 +1,6 @@
 import { useFormik } from "formik";
 import React, { useEffect } from "react";
-import { Form } from "react-bootstrap";
+import { Form, ListGroup } from "react-bootstrap";
 import NullableCheckBox from "src/modules/common/components/NullableCheckBox";
 import * as Yup from "yup";
 import { Car, CreateCarDto } from "../api/types";
@@ -76,6 +76,18 @@ const CarForm: React.FC<CarFormProps> = ({
           </Form.Group>
         </Form>
       </fieldset>
+      <hr />
+      {!formik.isValid && (
+        <ListGroup>
+          {Object.entries(formik.errors)
+            .filter(([key]) => !!formik.touched[key as keyof CreateCarDto])
+            .map(([key, value]) => (
+              <ListGroup.Item key={key} variant="danger">
+                {value.toString()}
+              </ListGroup.Item>
+            ))}
+        </ListGroup>
+      )}
     </>
   );
 };

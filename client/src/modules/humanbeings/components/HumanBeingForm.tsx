@@ -1,6 +1,14 @@
 import { useFormik } from "formik";
 import React, { useEffect, useState } from "react";
-import { Button, Card, Col, Form, Row, Spinner } from "react-bootstrap";
+import {
+  Button,
+  Card,
+  Col,
+  Form,
+  ListGroup,
+  Row,
+  Spinner,
+} from "react-bootstrap";
 import { FaCar, FaCarCrash } from "react-icons/fa";
 import { useFindOneCarQuery } from "src/modules/cars/api";
 import CarCard from "src/modules/cars/components/CarCard";
@@ -340,6 +348,21 @@ const HumanBeingForm: React.FC<HumanBeingFormProps> = ({
           </Form.Group>
         </Form>
       </fieldset>
+
+      <hr />
+      {!formik.isValid && (
+        <ListGroup>
+          {Object.entries(formik.errors)
+            .filter(
+              ([key]) => !!formik.touched[key as keyof CreateHumanBeingDto],
+            )
+            .map(([key, value]) => (
+              <ListGroup.Item key={key} variant="danger">
+                {value.toString()}
+              </ListGroup.Item>
+            ))}
+        </ListGroup>
+      )}
 
       <CarSelectModal
         isShown={carSelectModalShown}
