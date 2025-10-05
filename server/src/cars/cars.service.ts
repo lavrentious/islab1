@@ -117,9 +117,18 @@ export class CarsService {
   }
 
   async remove(id: number) {
-    const deleted = await this.repo.nativeDelete({ id });
-    if (deleted === 0) {
-      throw new NotFoundException(`Car #${id} not found`);
+    const car = await this.repo.findOneOrFail(
+      { id },
+      {
+        populate: ["owners"],
+        failHandler: () => new NotFoundException(`Car #${id} not found`),
+      },
+    );
+    if (car.owners.length) {
+      throw new BadRequestException(
+        `Car #${id} has ${car.owners.length} owners and cannot be deleted`,
+      );
     }
+    await this.repo.nativeDelete({ id });
   }
 }
