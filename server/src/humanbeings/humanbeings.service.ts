@@ -10,6 +10,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
+import { CarsService } from "src/cars/cars.service";
 import { Car } from "src/cars/entities/car.entity";
 import { PaginateResponse } from "src/common/dto/pagination.dto";
 import {
@@ -18,9 +19,10 @@ import {
 } from "src/common/utils/pagination.utils";
 import { CreateHumanBeingDto } from "./dto/create-humanbeing.dto";
 import { FindAllHumanbeingsQueryParamsDto } from "./dto/find-all-humanbeings-query-params.dto";
+import { GroupByCarDto } from "./dto/group-by-car.dto";
 import { HumanBeingDto } from "./dto/humanbeing.dto";
 import { UpdateHumanBeingDto } from "./dto/update-humanbeing.dto";
-import { HumanBeing } from "./entities/humanbeing.entity";
+import { HumanBeing, WeaponType } from "./entities/humanbeing.entity";
 
 @Injectable()
 export class HumanBeingsService {
@@ -28,7 +30,10 @@ export class HumanBeingsService {
     private readonly em: EntityManager,
     @InjectRepository(HumanBeing)
     private readonly repo: EntityRepository<HumanBeing>,
+    private readonly carsService: CarsService,
   ) {}
+
+  // CRUD
 
   async create(dto: CreateHumanBeingDto): Promise<HumanBeingDto> {
     let car: Car | null = null;
@@ -185,5 +190,48 @@ export class HumanBeingsService {
     if (deleted === 0) {
       throw new NotFoundException(`Human being #${id} not found`);
     }
+  }
+
+  // special functions
+
+  async groupByCar() {
+    const result = await this.em
+      .getConnection()
+      .execute("SELECT * FROM group_by_car()");
+    return result as GroupByCarDto;
+  }
+
+  async countImpactSpeedLessThan(threshold: number) {
+    const [{ count_impact_speed_less_than }] = await this.em
+      .getConnection()
+      .execute("SELECT count_impact_speed_less_than(?)", [threshold]);
+    return +count_impact_speed_less_than;
+  }
+
+  async uniqueWeaponTypes() {
+    const [{ unique_weapon_types }] = await this.em
+      .getConnection()
+      .execute("SELECT unique_weapon_types()");
+    return unique_weapon_types as WeaponType[];
+  }
+
+  async deleteWithoutToothpicks() {
+    const [{ delete_without_toothpicks }] = await this.em
+      .getConnection()
+      .execute("SELECT delete_without_toothpicks()");
+    return +delete_without_toothpicks;
+  }
+
+  async assignCarToCarless(id: number): Promise<number> {
+    const car = await this.carsService.findOne(id);
+    if (!car) {
+      throw new NotFoundException(`Car #${id} not found`);
+    }
+
+    const [{ assign_car_to_carless }] = await this.em.execute(
+      `SELECT assign_car_to_carless(?)`,
+      [id],
+    );
+    return +assign_car_to_carless;
   }
 }

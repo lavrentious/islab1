@@ -96,6 +96,10 @@ export class CarsService {
     );
   }
 
+  findOneByName(name: string) {
+    return this.repo.findOne({ name });
+  }
+
   async update(id: number, dto: UpdateCarDto) {
     if (!dto || Object.keys(dto).length === 0) {
       throw new BadRequestException("Request body cannot be empty");

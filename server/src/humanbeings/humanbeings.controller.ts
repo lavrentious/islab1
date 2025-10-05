@@ -10,8 +10,11 @@ import {
 } from "@nestjs/common";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { PaginateResponse } from "src/common/dto/pagination.dto";
+import { AssignCarToCarlessQueryParamsDto } from "./dto/assign-car-to-carless-query-params.dto";
+import { CountImpactSpeedLessThanQueryParamsDto } from "./dto/count-impact-speed-less-than-query-params.dto";
 import { CreateHumanBeingDto } from "./dto/create-humanbeing.dto";
 import { FindAllHumanbeingsQueryParamsDto } from "./dto/find-all-humanbeings-query-params.dto";
+import { GroupByCarDto, GroupByCarItem } from "./dto/group-by-car.dto";
 import { HumanBeingDto } from "./dto/humanbeing.dto";
 import { UpdateHumanBeingDto } from "./dto/update-humanbeing.dto";
 import { HumanBeingsService } from "./humanbeings.service";
@@ -20,6 +23,8 @@ import { HumanBeingsService } from "./humanbeings.service";
 @Controller("humanbeings")
 export class HumanBeingsController {
   constructor(private readonly service: HumanBeingsService) {}
+
+  // CRUD
 
   @ApiOperation({ summary: "Create human being" })
   @ApiResponse({
@@ -78,5 +83,51 @@ export class HumanBeingsController {
   @Delete(":id")
   async remove(@Param("id") id: string): Promise<void> {
     return this.service.remove(+id);
+  }
+
+  // special
+
+  @ApiResponse({
+    status: 200,
+    type: [GroupByCarItem],
+    description: "Success",
+  })
+  @Get("/special/group-by-car")
+  async groupByCar(): Promise<GroupByCarDto> {
+    return this.service.groupByCar();
+  }
+
+  @ApiResponse({
+    status: 200,
+    type: Number,
+    description: "Success",
+  })
+  @Get("/special/impact-speed-less-than")
+  async countImpactSpeedLessThan(
+    @Query() params: CountImpactSpeedLessThanQueryParamsDto,
+  ): Promise<number> {
+    return this.service.countImpactSpeedLessThan(params.threshold);
+  }
+
+  @ApiResponse({
+    status: 200,
+    type: Number,
+    description: "Success",
+  })
+  @Delete("/special/delete-without-toothpicks")
+  async deleteWithoutToothpicks(): Promise<number> {
+    return this.service.deleteWithoutToothpicks();
+  }
+
+  @ApiResponse({
+    status: 200,
+    type: Number,
+    description: "Success",
+  })
+  @Post("/special/assign-car-to-carless")
+  async assignCarToCarless(
+    @Body() params: AssignCarToCarlessQueryParamsDto,
+  ): Promise<number> {
+    return this.service.assignCarToCarless(params.car);
   }
 }

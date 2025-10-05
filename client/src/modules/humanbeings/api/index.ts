@@ -69,6 +69,36 @@ export const humanBeingsApi = createApi({
         { type: "HumanBeing", id: "LIST" },
       ],
     }),
+    groupByCar: build.query<{ car: number | null; total: number }[], void>({
+      query: () => ({
+        url: "/special/group-by-car",
+        method: "GET",
+      }),
+    }),
+    countImpactSpeedLessThan: build.query<number, number>({
+      query: (threshold) => ({
+        url: `/special/impact-speed-less-than`,
+        method: "GET",
+        params: { threshold },
+      }),
+    }),
+    assignCarToCarless: build.mutation<number, number>({
+      query: (car) => ({
+        url: `/special/assign-car-to-carless`,
+        method: "POST",
+        body: { car },
+      }),
+      invalidatesTags: (result) =>
+        result ? [{ type: "HumanBeing", id: "LIST" }] : [],
+    }),
+    deleteWithoutToothpicks: build.mutation<number, void>({
+      query: () => ({
+        url: `/special/delete-without-toothpicks`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (result) =>
+        result ? [{ type: "HumanBeing", id: "LIST" }] : [],
+    }),
   }),
 });
 
@@ -78,4 +108,8 @@ export const {
   useCreateHumanBeingMutation,
   useDeleteHumanBeingMutation,
   useUpdateHumanBeingMutation,
+  useLazyGroupByCarQuery,
+  useLazyCountImpactSpeedLessThanQuery,
+  useAssignCarToCarlessMutation,
+  useDeleteWithoutToothpicksMutation,
 } = humanBeingsApi;
