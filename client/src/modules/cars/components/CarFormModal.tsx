@@ -4,6 +4,7 @@ import { FaCheck } from "react-icons/fa";
 import { FaX } from "react-icons/fa6";
 import LoadingButton from "src/modules/common/components/LoadingButton";
 import CarForm, { CarFormProps } from "./CarForm";
+import "./modal.css";
 
 interface CarFormModalProps extends CarFormProps {
   isShown: boolean;
@@ -22,7 +23,7 @@ const CarFormModal: React.FC<CarFormModalProps> = ({
   const [isValid, setIsValid] = useState(false);
 
   return (
-    <Modal show={isShown} onHide={onClose}>
+    <Modal show={isShown} onHide={onClose} backdropClassName="overmodal">
       <Modal.Header closeButton>
         <Modal.Title>{props.existing ? "Update" : "Create"} Car</Modal.Title>
       </Modal.Header>

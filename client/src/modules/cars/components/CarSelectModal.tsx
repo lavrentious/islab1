@@ -1,6 +1,7 @@
 import React from "react";
 import { Modal } from "react-bootstrap";
 import CarsMenu, { CarsMenuProps } from "src/modules/cars/components/CarsMenu";
+import "./modal.css";
 
 interface CarSelectModalProps extends CarsMenuProps {
   isShown: boolean;
@@ -13,7 +14,7 @@ const CarSelectModal: React.FC<CarSelectModalProps> = ({
   ...props
 }) => {
   return (
-    <Modal show={isShown} onHide={onClose}>
+    <Modal show={isShown} onHide={onClose} backdropClassName="overmodal">
       <Modal.Header closeButton>
         <Modal.Title>Select Car</Modal.Title>
       </Modal.Header>
