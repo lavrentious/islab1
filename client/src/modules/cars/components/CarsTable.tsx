@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-table";
 import React, { useMemo } from "react";
 import { Button, Spinner, Table } from "react-bootstrap";
+import { FaArrowDown, FaArrowUp } from "react-icons/fa";
 import { FaPencil, FaTrash } from "react-icons/fa6";
 import { useNavigate } from "react-router";
 import { Car } from "../api/types";
@@ -81,8 +82,8 @@ const CarsTable: React.FC<CarsTableProps> = ({
                     header.column.columnDef.header,
                     header.getContext(),
                   )}
-                  {header.column.getIsSorted() === "desc" ? " 🔼" : ""}
-                  {header.column.getIsSorted() === "asc" ? " 🔽" : ""}
+                  {header.column.getIsSorted() === "desc" ? <FaArrowUp /> : ""}
+                  {header.column.getIsSorted() === "asc" ? <FaArrowDown /> : ""}
                 </th>
               ))}
               <th colSpan={2}>Manage</th>
