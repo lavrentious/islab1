@@ -9,6 +9,8 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  Max,
+  MaxLength,
   ValidateNested,
 } from "class-validator";
 import { Mood, WeaponType } from "../entities/humanbeing.entity";
@@ -19,12 +21,14 @@ export class CoordinatesDto {
   x!: number;
 
   @ApiProperty({ example: 42, description: "Y coordinate (int)" })
+  @Max(2147483647)
   @IsInt()
   y!: number;
 }
 
 export class CreateHumanBeingDto {
   @ApiProperty({ example: "Nikita", description: "Human name" })
+  @MaxLength(255)
   @IsString()
   @IsNotEmpty()
   name!: string;
@@ -58,6 +62,7 @@ export class CreateHumanBeingDto {
 
   @ApiProperty({ example: 99.9, description: "Impact speed" })
   @IsOptional()
+  @Max(2147483647)
   @IsNumber()
   impactSpeed?: number | null;
 
@@ -65,6 +70,8 @@ export class CreateHumanBeingDto {
     example: "College, Electric Youth - A Real Hero",
     description: "Soundtrack name",
   })
+  @MaxLength(255)
+  @IsNotEmpty()
   @IsString()
   soundtrackName!: string;
 
@@ -72,6 +79,7 @@ export class CreateHumanBeingDto {
     example: 42,
     description: "Minutes of waiting",
   })
+  @Max(2147483647)
   @IsOptional()
   @IsInt()
   minutesOfWaiting?: number | null;

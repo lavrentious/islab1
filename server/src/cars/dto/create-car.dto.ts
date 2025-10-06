@@ -1,8 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsBoolean, IsOptional, IsString } from "class-validator";
+import {
+  IsBoolean,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from "class-validator";
 
 export class CreateCarDto {
   @ApiProperty({ example: "honda civic", description: "Car name" })
+  @MaxLength(255)
+  @IsNotEmpty()
   @IsString()
   name!: string;
 
