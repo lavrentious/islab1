@@ -222,7 +222,12 @@ const HumanBeingsFilters: React.FC<HumanBeingsFiltersProps> = ({
         <Button variant="secondary" onClick={resetFilters} disabled={disabled}>
           Reset
         </Button>
-        <Button variant="primary" onClick={applyFilters} disabled={disabled}>
+        <Button
+          type="submit"
+          variant="primary"
+          onClick={applyFilters}
+          disabled={disabled}
+        >
           Apply
         </Button>
       </div>
