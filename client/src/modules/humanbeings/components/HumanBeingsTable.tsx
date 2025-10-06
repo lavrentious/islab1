@@ -16,7 +16,8 @@ import { useFindOneCarQuery } from "src/modules/cars/api";
 import { HumanBeing } from "../api/types";
 
 interface HumanBeingsTableProps {
-  items: HumanBeing[];
+  items: HumanBeing[] | null;
+  isLoading?: boolean;
   sorting: SortingState;
   setSorting?: OnChangeFn<SortingState>;
   onRowEdit?: (item: HumanBeing) => void;
@@ -54,6 +55,7 @@ export const CarCoolCell: React.FC<{ id: number | null }> = ({ id }) => {
 
 const HumanBeingsTable: React.FC<HumanBeingsTableProps> = ({
   items,
+  isLoading,
   sorting,
   setSorting,
   onRowDelete,
@@ -143,7 +145,7 @@ const HumanBeingsTable: React.FC<HumanBeingsTableProps> = ({
   );
 
   const table = useReactTable({
-    data: items,
+    data: items || [],
     columns,
     state: { sorting },
     getCoreRowModel: getCoreRowModel(),
@@ -224,7 +226,11 @@ const HumanBeingsTable: React.FC<HumanBeingsTableProps> = ({
           ) : (
             <tr>
               <td colSpan={columns.length + 2} className="text-center">
-                No results found
+                {isLoading ? (
+                  <Spinner variant="primary" className="my-2 mx-auto" />
+                ) : (
+                  <span>No results found</span>
+                )}
               </td>
             </tr>
           )}

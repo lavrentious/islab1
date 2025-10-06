@@ -38,8 +38,9 @@ const HumanBeingFormModal: React.FC<HumanBeingFormModalProps> = ({
           type="submit"
           form={formId}
           disabled={!isValid}
+          icon={<FaCheck />}
         >
-          <FaCheck /> Submit
+          Submit
         </LoadingButton>
         <Button variant="secondary" onClick={onClose}>
           <FaX /> Close

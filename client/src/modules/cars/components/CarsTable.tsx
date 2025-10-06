@@ -7,13 +7,13 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import React, { useMemo } from "react";
-import { Button, Table } from "react-bootstrap";
+import { Button, Spinner, Table } from "react-bootstrap";
 import { FaPencil, FaTrash } from "react-icons/fa6";
 import { useNavigate } from "react-router";
 import { Car } from "../api/types";
 
 interface CarsTableProps {
-  items: Car[];
+  items: Car[] | null;
   sorting: SortingState;
   setSorting?: OnChangeFn<SortingState>;
   onRowEdit?: (item: Car) => void;
@@ -57,7 +57,7 @@ const CarsTable: React.FC<CarsTableProps> = ({
   );
 
   const table = useReactTable({
-    data: items,
+    data: items || [],
     columns,
     state: { sorting },
     getCoreRowModel: getCoreRowModel(),
@@ -135,7 +135,11 @@ const CarsTable: React.FC<CarsTableProps> = ({
           ) : (
             <tr>
               <td colSpan={columns.length + 2} className="text-center">
-                {isLoading ? "Loading..." : "No results found"}
+                {isLoading ? (
+                  <Spinner variant="primary" className="my-2 mx-auto" />
+                ) : (
+                  <span>No results found</span>
+                )}
               </td>
             </tr>
           )}

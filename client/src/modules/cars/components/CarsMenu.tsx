@@ -1,6 +1,6 @@
 import { SortingState } from "@tanstack/react-table";
 import React, { useEffect, useState } from "react";
-import { Button, Spinner } from "react-bootstrap";
+import { Button } from "react-bootstrap";
 import toast from "react-hot-toast";
 import { FaPlus } from "react-icons/fa";
 import { formatApiError } from "src/modules/common/api/utils";
@@ -64,44 +64,34 @@ const CarsMenu: React.FC<CarsMenuProps> = ({ onCarSelect }) => {
   const [editingCar, setEditingCar] = useState<Car | null>(null);
   return (
     <>
-      {isLoading && (
-        <Spinner
-          className="d-block mx-auto my-5"
-          variant="primary"
-          animation="border"
-        />
-      )}
-      <Button onClick={() => setFormModalShown(true)}>
+      <Button onClick={() => setFormModalShown(true)} disabled={isLoading}>
         <FaPlus /> Create
       </Button>
       <hr />
       <CarsFilters disabled={isLoading} onChange={setFilters} />
       <hr />
-      {data && (
-        <>
-          <CarsTable
-            sorting={sorting}
-            setSorting={setSorting}
-            items={data.items}
-            onRowDelete={(item) => {
-              const proceed = window.confirm(
-                `Are you sure you want to delete car #${item.id}?`,
-              );
-              if (proceed) {
-                deleteCar(item.id)
-                  .unwrap()
-                  .then(() => toast.success("Successfully deleted"))
-                  .catch((e) => toast.error(formatApiError(e)));
-              }
-            }}
-            onRowEdit={(item) => {
-              setEditingCar(item);
-              setFormModalShown(true);
-            }}
-            onRowSelect={onCarSelect}
-          />
-        </>
-      )}
+      <CarsTable
+        sorting={sorting}
+        isLoading={isLoading}
+        setSorting={setSorting}
+        items={data?.items || null}
+        onRowDelete={(item) => {
+          const proceed = window.confirm(
+            `Are you sure you want to delete car #${item.id}?`,
+          );
+          if (proceed) {
+            deleteCar(item.id)
+              .unwrap()
+              .then(() => toast.success("Successfully deleted"))
+              .catch((e) => toast.error(formatApiError(e)));
+          }
+        }}
+        onRowEdit={(item) => {
+          setEditingCar(item);
+          setFormModalShown(true);
+        }}
+        onRowSelect={onCarSelect}
+      />
 
       <Paginator
         limit={limit}
@@ -123,7 +113,10 @@ const CarsMenu: React.FC<CarsMenuProps> = ({ onCarSelect }) => {
               dto: car,
             })
               .unwrap()
-              .then(() => toast.success("Successfully updated"))
+              .then(() => {
+                toast.success("Successfully updated");
+                setFormModalShown(false);
+              })
               .catch((e) => toast.error(formatApiError(e)));
             setEditingCar(null);
           } else {
@@ -133,10 +126,10 @@ const CarsMenu: React.FC<CarsMenuProps> = ({ onCarSelect }) => {
               .then((car) => {
                 toast.success("Successfully created");
                 onCarSelect?.(car);
+                setFormModalShown(false);
               })
               .catch((e) => toast.error(formatApiError(e)));
           }
-          setFormModalShown(false);
         }}
         onClose={() => setFormModalShown(false)}
       />

@@ -1,12 +1,6 @@
 import { SortingState } from "@tanstack/react-table";
 import { useEffect, useState } from "react";
-import {
-  Button,
-  Container,
-  Dropdown,
-  DropdownButton,
-  Spinner,
-} from "react-bootstrap";
+import { Button, Container, Dropdown, DropdownButton } from "react-bootstrap";
 import toast from "react-hot-toast";
 import { FaPlus } from "react-icons/fa";
 import CarSelectModal from "src/modules/cars/components/CarSelectModal";
@@ -92,15 +86,12 @@ const MainPage = () => {
     <>
       <Container>
         <h1>Human Beings</h1>
-        {isLoading && (
-          <Spinner
-            className="d-block mx-auto my-5"
-            variant="primary"
-            animation="border"
-          />
-        )}
         <div className="d-flex">
-          <Button className="me-2" onClick={() => setFormModalShown(true)}>
+          <Button
+            className="me-2"
+            onClick={() => setFormModalShown(true)}
+            disabled={isLoading}
+          >
             <FaPlus /> Create
           </Button>
           <DropdownButton className="me-2" title="Special" variant="warning">
@@ -147,30 +138,27 @@ const MainPage = () => {
         <hr />
         <HumanBeingsFilters disabled={isLoading} onChange={setFilters} />
         <hr />
-        {data && (
-          <>
-            <HumanBeingsTable
-              sorting={sorting}
-              setSorting={setSorting}
-              items={data.items}
-              onRowDelete={(item) => {
-                const proceed = window.confirm(
-                  `Are you sure you want to delete item #${item.id}?`,
-                );
-                if (proceed) {
-                  deleteHumanBeing(item.id)
-                    .unwrap()
-                    .then(() => toast.success("Successfully deleted"))
-                    .catch((e) => toast.error(formatApiError(e)));
-                }
-              }}
-              onRowEdit={(item) => {
-                setSelectedHumanBeing(item);
-                setFormModalShown(true);
-              }}
-            />
-          </>
-        )}
+        <HumanBeingsTable
+          items={data?.items ?? null}
+          isLoading={isLoading}
+          sorting={sorting}
+          setSorting={setSorting}
+          onRowDelete={(item) => {
+            const proceed = window.confirm(
+              `Are you sure you want to delete item #${item.id}?`,
+            );
+            if (proceed) {
+              deleteHumanBeing(item.id)
+                .unwrap()
+                .then(() => toast.success("Successfully deleted"))
+                .catch((e) => toast.error(formatApiError(e)));
+            }
+          }}
+          onRowEdit={(item) => {
+            setSelectedHumanBeing(item);
+            setFormModalShown(true);
+          }}
+        />
 
         <Paginator
           limit={limit}
@@ -181,7 +169,7 @@ const MainPage = () => {
         />
       </Container>
       <HumanBeingFormModal
-        disabled={isLoading || isUpdating}
+        disabled={isCreating || isUpdating}
         existing={selectedHumanBeing}
         isShown={formModalShown}
         isLoading={isCreating}
