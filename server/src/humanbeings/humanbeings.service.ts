@@ -114,7 +114,7 @@ export class HumanBeingsService {
     }
 
     // pagination
-    const totalItems = items.length;
+    const totalItems = await this.repo.count(where);
     const limit = params.limit ?? totalItems;
     const page = params.page ?? 1;
     const totalPages = calculateTotalPages(totalItems, limit);
