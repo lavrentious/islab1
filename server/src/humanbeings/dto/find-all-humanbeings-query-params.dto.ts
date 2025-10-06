@@ -84,6 +84,8 @@ export class FindAllHumanbeingsQueryParamsDto extends PaginateParams {
     "creationDate",
     "coordinates_x",
     "coordinates_y",
+    "impactSpeed",
+    "minutesOfWaiting",
   ] as (keyof HumanBeing)[])
   @IsString()
   sortBy?: keyof HumanBeing;
