@@ -41,7 +41,7 @@ export class CreateHumanBeingDto {
 
   @ApiProperty({ example: true, description: "Ryan Gosling " })
   @IsBoolean()
-  realHero?: boolean;
+  realHero!: boolean;
 
   @ApiPropertyOptional({
     example: false,

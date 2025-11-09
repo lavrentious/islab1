@@ -42,6 +42,12 @@ export class EnvironmentVariables {
   DB_PORT: string;
 
   @IsString()
+  REDIS_HOST: string;
+
+  @IsString()
+  REDIS_PORT: string;
+
+  @IsString()
   JWT_ACCESS_SECRET: string;
 
   @IsString()
@@ -52,6 +58,9 @@ export class EnvironmentVariables {
 
   @IsString()
   CLIENT_URL: string;
+
+  @IsString()
+  TMP_DIR: string;
 }
 
 export function validate(config: Record<string, unknown>) {

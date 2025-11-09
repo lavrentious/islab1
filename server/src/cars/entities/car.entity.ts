@@ -14,4 +14,7 @@ export class Car {
 
   @OneToMany(() => HumanBeing, (human) => human.car)
   owners: HumanBeing[];
+
+  @Property({ default: 0 })
+  _version: number = 0; // TODO: add constraint (> 0)
 }

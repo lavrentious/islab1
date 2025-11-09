@@ -5,6 +5,7 @@ import NotFoundPage from "src/modules/common/pages/NotFoundPage";
 import SettingsPage from "src/modules/common/pages/SettingsPage";
 import HumanBeingPage from "src/modules/humanbeings/pages/HumanBeingPage";
 import MainPage from "src/modules/humanbeings/pages/MainPage";
+import ImportsPage from "src/modules/imports/pages/ImportsPage";
 
 export type Route = {
   path: string;
@@ -15,6 +16,7 @@ const routes: Route[] = [
   { element: <HumanBeingPage />, path: "/humanbeings/:id" },
   { element: <CarPage />, path: "/cars/:id" },
   { element: <CarsPage />, path: "/cars" },
+  { element: <ImportsPage />, path: "/imports" },
   { element: <SettingsPage />, path: "/settings" },
   { element: <NotFoundPage />, path: "/*" },
 ];

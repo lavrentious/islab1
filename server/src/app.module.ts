@@ -1,5 +1,6 @@
 import { MikroOrmModule } from "@mikro-orm/nestjs";
 import { PostgreSqlDriver } from "@mikro-orm/postgresql";
+import { BullModule } from "@nestjs/bull";
 import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { AppController } from "./app.controller";
@@ -7,6 +8,7 @@ import { AppService } from "./app.service";
 import { CarsModule } from "./cars/cars.module";
 import { EnvironmentVariables, validate } from "./env.validation";
 import { HumanBeingsModule } from "./humanbeings/humanbeings.module";
+import { ImporterModule } from "./importer/importer.module";
 
 @Module({
   imports: [
@@ -32,8 +34,18 @@ import { HumanBeingsModule } from "./humanbeings/humanbeings.module";
       inject: [ConfigService],
       driver: PostgreSqlDriver,
     }),
+    BullModule.forRootAsync({
+      useFactory: (configService: ConfigService<EnvironmentVariables>) => ({
+        redis: {
+          host: configService.get("REDIS_HOST"),
+          port: configService.get("REDIS_PORT"),
+        },
+      }),
+      inject: [ConfigService],
+    }),
     HumanBeingsModule,
     CarsModule,
+    ImporterModule,
   ],
   controllers: [AppController],
   providers: [AppService],

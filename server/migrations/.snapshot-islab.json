@@ -33,6 +33,16 @@
           "primary": false,
           "nullable": true,
           "mappedType": "boolean"
+        },
+        "_version": {
+          "name": "_version",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "default": "0",
+          "mappedType": "integer"
         }
       },
       "name": "car",
@@ -196,6 +206,36 @@
             "RIFLE"
           ],
           "mappedType": "enum"
+        },
+        "_version": {
+          "name": "_version",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "default": "0",
+          "mappedType": "integer"
+        },
+        "_next_version_id": {
+          "name": "_next_version_id",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "default": "null",
+          "mappedType": "integer"
+        },
+        "_version_root_id": {
+          "name": "_version_root_id",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "default": "null",
+          "mappedType": "integer"
         }
       },
       "name": "human_being",
@@ -224,11 +264,148 @@
             "id"
           ],
           "referencedTableName": "public.car",
-          "createForeignKeyConstraint": true,
+          "deleteRule": "set null",
+          "updateRule": "cascade"
+        },
+        "human_being__next_version_id_foreign": {
+          "constraintName": "human_being__next_version_id_foreign",
+          "columnNames": [
+            "_next_version_id"
+          ],
+          "localTableName": "public.human_being",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "public.human_being",
+          "deleteRule": "set null",
+          "updateRule": "cascade"
+        },
+        "human_being__version_root_id_foreign": {
+          "constraintName": "human_being__version_root_id_foreign",
+          "columnNames": [
+            "_version_root_id"
+          ],
+          "localTableName": "public.human_being",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "public.human_being",
           "deleteRule": "set null",
           "updateRule": "cascade"
         }
       },
+      "nativeEnums": {}
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "unsigned": false,
+          "autoincrement": true,
+          "primary": true,
+          "nullable": false,
+          "mappedType": "integer"
+        },
+        "file_name": {
+          "name": "file_name",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "length": 255,
+          "mappedType": "string"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "enumItems": [
+            "PENDING",
+            "IN_PROGRESS",
+            "SUCCESS",
+            "FAILED"
+          ],
+          "mappedType": "enum"
+        },
+        "ok_count": {
+          "name": "ok_count",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "integer"
+        },
+        "failed_count": {
+          "name": "failed_count",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "integer"
+        },
+        "duplicate_count": {
+          "name": "duplicate_count",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "integer"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "length": 6,
+          "mappedType": "datetime"
+        },
+        "finished_at": {
+          "name": "finished_at",
+          "type": "timestamptz",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "length": 6,
+          "mappedType": "datetime"
+        },
+        "error_message": {
+          "name": "error_message",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "length": 255,
+          "mappedType": "string"
+        }
+      },
+      "name": "import_operation",
+      "schema": "public",
+      "indexes": [
+        {
+          "keyName": "import_operation_pkey",
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": true,
+          "primary": true,
+          "unique": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
       "nativeEnums": {}
     }
   ],
