@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Navbar as BootstrapNavbar, Container, Nav } from "react-bootstrap";
-import { FaCar, FaCog, FaHome } from "react-icons/fa";
+import { FaCar, FaCog, FaFileImport, FaHome } from "react-icons/fa";
 import { TbPrison as Logo } from "react-icons/tb";
 import { Link } from "react-router";
 import VersionsStatus from "./VersionsStatus";
@@ -35,6 +35,10 @@ const Navbar: React.FunctionComponent = () => {
               <Nav.Link as={Link} to="/cars">
                 <FaCar className="me-2" />
                 Cars
+              </Nav.Link>
+              <Nav.Link as={Link} to="/imports">
+                <FaFileImport className="me-2" />
+                Imports
               </Nav.Link>
               <Nav.Link as={Link} to="/settings">
                 <FaCog className="me-2" />

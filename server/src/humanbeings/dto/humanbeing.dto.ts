@@ -2,7 +2,10 @@ import { ApiProperty } from "@nestjs/swagger";
 import { HumanBeing, Mood, WeaponType } from "../entities/humanbeing.entity";
 import { CoordinatesDto } from "./create-humanbeing.dto";
 
-export class HumanBeingDto implements Partial<Omit<HumanBeing, "car">> {
+export class HumanBeingDto
+  implements
+    Partial<Omit<HumanBeing, "car" | "_next_version" | "_version_root">>
+{
   constructor(humanBeing: HumanBeing) {
     Object.assign(this, humanBeing);
     this.car = humanBeing.car?.id ?? null;
@@ -51,4 +54,17 @@ export class HumanBeingDto implements Partial<Omit<HumanBeing, "car">> {
 
   @ApiProperty({ enum: WeaponType, description: "Weapon type" })
   weaponType!: WeaponType;
+
+  @ApiProperty({ example: 0, description: "Version", minimum: 0 })
+  _version!: number;
+
+  @ApiProperty({ example: 1, description: "Next version ID", nullable: true })
+  _next_version?: number;
+
+  @ApiProperty({
+    example: 1,
+    description: "Previous version ID",
+    nullable: true,
+  })
+  _version_root?: number;
 }
