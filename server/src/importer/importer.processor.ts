@@ -7,7 +7,6 @@ import { Process, Processor } from "@nestjs/bull";
 import { InternalServerErrorException } from "@nestjs/common";
 import { type Job } from "bull";
 import * as path from "path";
-import { Car } from "src/cars/entities/car.entity";
 import { CreateHumanBeingDto } from "src/humanbeings/dto/create-humanbeing.dto";
 import { HumanBeing } from "src/humanbeings/entities/humanbeing.entity";
 import { Worker } from "worker_threads";
@@ -15,6 +14,7 @@ import {
   ImportOperation,
   ImportStatus,
 } from "./entities/importoperation.entity";
+
 import { ImporterProcessorPayload, ImportWorkerPayload } from "./types";
 
 const MAX_RETRIES = 20;
@@ -97,24 +97,21 @@ export class ImporterProcessor {
     duplicateCount: number;
   }> {
     let retries = 0;
+    const em = this.orm.em.fork();
+    // validate FKs
+    const uniqueCars = new Set<number>(
+      parsedObjects.filter((dto) => dto.car != null).map((dto) => dto.car!),
+    );
+    console.log(uniqueCars);
+
     while (retries < MAX_RETRIES) {
       try {
-        const em = this.orm.em.fork();
         let okCount = 0;
         let duplicateCount = 0;
         await em.transactional(
           async (tx) => {
             console.log("importing into db...");
             for (const dto of parsedObjects) {
-              // check FKs
-              if (dto.car != null) {
-                const car = await tx.findOne(Car, { id: dto.car });
-                if (!car) {
-                  throw new Error(
-                    `car ${dto.car} not found (human being name = "${dto.name}")`,
-                  );
-                }
-              }
               // find duplicates
               const existing = await tx.findOne(HumanBeing, {
                 name: dto.name,
@@ -146,16 +143,16 @@ export class ImporterProcessor {
                 okCount++;
               }
             }
-            console.log(
-              `--- db import result: ${okCount} created, ${duplicateCount} duplicates`,
-            );
             await tx.flush();
           },
           { isolationLevel: IsolationLevel.SERIALIZABLE },
         );
+        console.log(
+          `--- db import result: ${okCount} created, ${duplicateCount} duplicates`,
+        );
         return { okCount, duplicateCount };
       } catch (e) {
-        if (e instanceof DriverException && e.code === "40001") {
+        if ("code" in e && (e as DriverException).code === "40001") {
           console.log(`retrying (${retries + 1}/${MAX_RETRIES})...`);
           retries++;
           continue;
