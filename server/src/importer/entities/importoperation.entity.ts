@@ -19,6 +19,9 @@ export class ImportOperation {
   status!: ImportStatus;
 
   @Property({ nullable: true })
+  entryCount?: number; // valid parsed entries in file
+
+  @Property({ nullable: true })
   okCount?: number;
 
   @Property({ nullable: true })

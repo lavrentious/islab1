@@ -21,6 +21,9 @@ export class ImportOperationDto {
   status!: ImportStatus;
 
   @ApiProperty()
+  entryCount?: number;
+
+  @ApiProperty()
   okCount?: number;
 
   @ApiProperty()

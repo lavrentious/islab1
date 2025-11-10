@@ -51,6 +51,8 @@ export class ImporterProcessor {
     console.log(`processor: msg="${data.msg}"`);
 
     // save
+    importOp.entryCount = data.validItems.length;
+    await em.persistAndFlush(importOp);
     if (!data.error && data.ok) {
       try {
         const res = await this.saveToDatabase(data.validItems);

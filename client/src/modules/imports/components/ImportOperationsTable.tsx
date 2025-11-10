@@ -55,6 +55,7 @@ const ImportOperationsTable: React.FC<Props> = ({
           );
         },
       },
+      { header: "Total", accessorKey: "entryCount" },
       { header: "OK", accessorKey: "okCount" },
       { header: "Failed", accessorKey: "failedCount" },
       { header: "Duplicates", accessorKey: "duplicateCount" },

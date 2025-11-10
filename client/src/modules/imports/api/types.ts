@@ -9,6 +9,7 @@ export class ImportOperation {
   id!: number;
   fileName!: string; // file name in ./<TMP_DIR>/uploads
   status!: ImportStatus;
+  entryCount?: number;
   okCount?: number;
   failedCount?: number;
   duplicateCount?: number;
