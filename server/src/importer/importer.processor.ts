@@ -30,7 +30,7 @@ export class ImporterProcessor {
 
   @Process({ name: "import-yaml", concurrency: 2 }) // concurrency: 13
   async importYaml(job: Job<ImporterProcessorPayload>) {
-    const em = this.orm.em.fork(); // ✅ создаём отдельный контекст
+    const em = this.orm.em.fork();
     const importOp = await em.findOne(ImportOperation, {
       id: job.data.importOp,
     });
@@ -102,25 +102,36 @@ export class ImporterProcessor {
     duplicateCount: number;
   }> {
     let retries = 0;
-    const em = this.orm.em.fork();
-    const invalidCars = await this._getInvalidCars(parsedObjects, em);
+    const invalidCars = await this._getInvalidCars(parsedObjects);
     if (invalidCars.length > 0) {
       throw new BadRequestException(`Invalid cars: ${invalidCars.join(", ")}`);
     }
 
+    const humanNames = new Set<string>(parsedObjects.map((dto) => dto.name));
+
     while (retries < MAX_RETRIES) {
       try {
+        const em = this.orm.em.fork();
         let okCount = 0;
         let duplicateCount = 0;
-        await em.transactional(
+        const res = await em.transactional(
           async (tx) => {
+            const fromDB: HumanBeing[] = humanNames.size
+              ? await tx.find(HumanBeing, {
+                  name: { $in: [...humanNames] },
+                  _next_version: null,
+                })
+              : [];
+            const hbMap = new Map<string, HumanBeing>(
+              fromDB.map((human) => [human.name, human]),
+            );
+            const toPersist: HumanBeing[] = [];
+
             console.log("importing into db...");
             for (const dto of parsedObjects) {
               // find duplicates
-              const existing = await tx.findOne(HumanBeing, {
-                name: dto.name,
-                _next_version: null,
-              });
+              const existing = hbMap.get(dto.name);
+
               if (existing) {
                 // duplicates found
                 const humanBeing = tx.create(HumanBeing, {
@@ -131,10 +142,10 @@ export class ImporterProcessor {
                     : existing.id,
                   creationDate: new Date(),
                 });
-                tx.persist(humanBeing);
-
                 existing._next_version = humanBeing;
-                tx.persist(existing);
+                hbMap.set(dto.name, humanBeing);
+                toPersist.push(humanBeing);
+                toPersist.push(existing);
 
                 duplicateCount++;
               } else {
@@ -143,18 +154,22 @@ export class ImporterProcessor {
                   _version: 0,
                   creationDate: new Date(),
                 });
-                tx.persist(humanBeing);
+                hbMap.set(dto.name, humanBeing);
+                toPersist.push(humanBeing);
                 okCount++;
               }
             }
+            tx.persist(toPersist);
             await tx.flush();
+
+            console.log(
+              `--- db import result: ${okCount} created, ${duplicateCount} duplicates`,
+            );
+            return { okCount, duplicateCount };
           },
           { isolationLevel: IsolationLevel.SERIALIZABLE },
         );
-        console.log(
-          `--- db import result: ${okCount} created, ${duplicateCount} duplicates`,
-        );
-        return { okCount, duplicateCount };
+        return res;
       } catch (e) {
         if ("code" in e && (e as DriverException).code === "40001") {
           console.log(`retrying (${retries + 1}/${MAX_RETRIES})...`);
