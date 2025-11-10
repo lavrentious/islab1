@@ -342,6 +342,15 @@
           ],
           "mappedType": "enum"
         },
+        "entry_count": {
+          "name": "entry_count",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "integer"
+        },
         "ok_count": {
           "name": "ok_count",
           "type": "int",
