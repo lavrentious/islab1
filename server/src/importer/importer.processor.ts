@@ -17,8 +17,7 @@ import {
 } from "./entities/importoperation.entity";
 import { ImporterProcessorPayload, ImportWorkerPayload } from "./types";
 
-const BATCH_SIZE = 500;
-const MAX_RETRIES = 3;
+const MAX_RETRIES = 20;
 
 @Processor("import-queue")
 export class ImporterProcessor {
@@ -97,106 +96,75 @@ export class ImporterProcessor {
     okCount: number;
     duplicateCount: number;
   }> {
-    const em = this.orm.em.fork();
-    let totalOk = 0;
-    let totalDuplicates = 0;
-
-    const batches: CreateHumanBeingDto[][] = [];
-    for (let i = 0; i < parsedObjects.length; i += BATCH_SIZE) {
-      batches.push(parsedObjects.slice(i, i + BATCH_SIZE));
-    }
-
-    console.log(
-      `Processing ${parsedObjects.length} items in ${batches.length} batches`,
-    );
-
-    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-      const batch = batches[batchIndex];
-      let retries = MAX_RETRIES;
-
-      while (retries > 0) {
-        try {
-          let okCount = 0;
-          let duplicateCount = 0;
-
-          await em.transactional(
-            async (tx) => {
-              console.log(
-                `batch ${batchIndex + 1}/${batches.length}: importing ${batch.length} items...`,
-              );
-              for (const dto of batch) {
-                // check FKs
-                if (dto.car != null) {
-                  const car = await tx.findOne(Car, { id: dto.car });
-                  if (!car) {
-                    throw new Error(
-                      `car ${dto.car} not found (human being name = "${dto.name}")`,
-                    );
-                  }
-                }
-
-                // find duplicates
-                const existing = await tx.find(HumanBeing, { name: dto.name });
-                if (existing.length > 0) {
-                  const max = existing.reduce((a, b) =>
-                    a._version > b._version ? a : b,
+    let retries = 0;
+    while (retries < MAX_RETRIES) {
+      try {
+        const em = this.orm.em.fork();
+        let okCount = 0;
+        let duplicateCount = 0;
+        await em.transactional(
+          async (tx) => {
+            console.log("importing into db...");
+            for (const dto of parsedObjects) {
+              // check FKs
+              if (dto.car != null) {
+                const car = await tx.findOne(Car, { id: dto.car });
+                if (!car) {
+                  throw new Error(
+                    `car ${dto.car} not found (human being name = "${dto.name}")`,
                   );
-
-                  const humanBeing = tx.create(HumanBeing, {
-                    ...dto,
-                    _version: max._version + 1,
-                    _version_root: max._version_root
-                      ? max._version_root
-                      : max.id,
-                    creationDate: new Date(),
-                  });
-                  tx.persist(humanBeing);
-
-                  max._next_version = humanBeing;
-                  tx.persist(max);
-                  duplicateCount++;
-                } else {
-                  const humanBeing = tx.create(HumanBeing, {
-                    ...dto,
-                    _version: 0,
-                    creationDate: new Date(),
-                  });
-                  tx.persist(humanBeing);
-                  okCount++;
                 }
               }
-              await tx.flush();
-            },
-            { isolationLevel: IsolationLevel.SERIALIZABLE },
-          );
+              // find duplicates
+              const existing = await tx.findOne(HumanBeing, {
+                name: dto.name,
+                _next_version: null,
+              });
+              if (existing) {
+                // duplicates found
+                const humanBeing = tx.create(HumanBeing, {
+                  ...dto,
+                  _version: existing._version + 1,
+                  _version_root: existing._version_root
+                    ? existing._version_root
+                    : existing.id,
+                  creationDate: new Date(),
+                });
+                tx.persist(humanBeing);
 
-          console.log(
-            `batch ${batchIndex + 1}/${batches.length}: ${okCount} created, ${duplicateCount} duplicates`,
-          );
+                existing._next_version = humanBeing;
+                tx.persist(existing);
 
-          totalOk += okCount;
-          totalDuplicates += duplicateCount;
-          break;
-        } catch (e) {
-          if (
-            e instanceof DriverException &&
-            e.code === "40001" &&
-            retries > 1
-          ) {
-            console.warn(
-              `serialization conflict in batch ${batchIndex + 1}, retrying... (${MAX_RETRIES - retries + 1}/${MAX_RETRIES})`,
+                duplicateCount++;
+              } else {
+                const humanBeing = tx.create(HumanBeing, {
+                  ...dto,
+                  _version: 0,
+                  creationDate: new Date(),
+                });
+                tx.persist(humanBeing);
+                okCount++;
+              }
+            }
+            console.log(
+              `--- db import result: ${okCount} created, ${duplicateCount} duplicates`,
             );
-            retries--;
-            continue;
-          }
-          throw e;
+            await tx.flush();
+          },
+          { isolationLevel: IsolationLevel.SERIALIZABLE },
+        );
+        return { okCount, duplicateCount };
+      } catch (e) {
+        if (e instanceof DriverException && e.code === "40001") {
+          console.log(`retrying (${retries + 1}/${MAX_RETRIES})...`);
+          retries++;
+          continue;
         }
+        throw e;
       }
     }
-
-    console.log(
-      `--- import done: ${totalOk} created, ${totalDuplicates} duplicates`,
+    throw new InternalServerErrorException(
+      `Failed to import ${parsedObjects.length} items after ${MAX_RETRIES} retries`,
     );
-    return { okCount: totalOk, duplicateCount: totalDuplicates };
   }
 }
