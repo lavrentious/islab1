@@ -3,6 +3,7 @@ import {
   Embedded,
   Entity,
   Enum,
+  Index,
   ManyToOne,
   PrimaryKey,
   Property,
@@ -49,6 +50,7 @@ export class HumanBeing {
   @PrimaryKey()
   id!: number;
 
+  @Index()
   @Property()
   name!: string;
 
