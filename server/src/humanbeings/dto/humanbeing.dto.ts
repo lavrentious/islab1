@@ -14,7 +14,7 @@ export class HumanBeingDto
   @ApiProperty()
   id!: number;
 
-  @ApiProperty({ example: "Nikita", description: "Human name" })
+  @ApiProperty({ example: "Nikita", description: "Human name, must be unique" })
   name!: string;
 
   @ApiProperty({ type: CoordinatesDto })

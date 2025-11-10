@@ -48,6 +48,13 @@ export class HumanBeingsService {
       );
     }
 
+    const existing = await this.repo.findOne({ name: dto.name });
+    if (existing) {
+      throw new BadRequestException(
+        `Human being with name "${dto.name}" already exists`,
+      );
+    }
+
     const humanBeing = this.repo.create({ ...dto, car } as Omit<
       HumanBeing,
       "id"
@@ -157,6 +164,13 @@ export class HumanBeingsService {
           new NotFoundException(`Human being #${id} not found`),
       },
     );
+
+    const existing = await this.repo.findOne({ name: dto.name });
+    if (existing && existing.id !== id) {
+      throw new BadRequestException(
+        `Human being with name "${dto.name}" already exists`,
+      );
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { car: _, ...rest } = dto;
