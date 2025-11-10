@@ -13,8 +13,15 @@ import { ImporterService } from "./importer.service";
 @Controller("imports")
 export class ImporterController {
   constructor(private readonly importerService: ImporterService) {}
+
   @Post()
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(
+    FileInterceptor("file", {
+      limits: {
+        fileSize: 100 * 1024 * 1024, // 100 MB
+      },
+    }),
+  )
   uploadFile(@UploadedFile() file: Express.Multer.File) {
     console.log("controller: got file", file);
     if (!file) {
