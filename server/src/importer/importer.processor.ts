@@ -1,10 +1,14 @@
 import {
   DriverException,
+  EntityManager,
   IsolationLevel,
   MikroORM,
 } from "@mikro-orm/postgresql";
 import { Process, Processor } from "@nestjs/bull";
-import { InternalServerErrorException } from "@nestjs/common";
+import {
+  BadRequestException,
+  InternalServerErrorException,
+} from "@nestjs/common";
 import { type Job } from "bull";
 import * as path from "path";
 import { CreateHumanBeingDto } from "src/humanbeings/dto/create-humanbeing.dto";
@@ -15,6 +19,7 @@ import {
   ImportStatus,
 } from "./entities/importoperation.entity";
 
+import { Car } from "src/cars/entities/car.entity";
 import { ImporterProcessorPayload, ImportWorkerPayload } from "./types";
 
 const MAX_RETRIES = 20;
@@ -98,11 +103,10 @@ export class ImporterProcessor {
   }> {
     let retries = 0;
     const em = this.orm.em.fork();
-    // validate FKs
-    const uniqueCars = new Set<number>(
-      parsedObjects.filter((dto) => dto.car != null).map((dto) => dto.car!),
-    );
-    console.log(uniqueCars);
+    const invalidCars = await this._getInvalidCars(parsedObjects, em);
+    if (invalidCars.length > 0) {
+      throw new BadRequestException(`Invalid cars: ${invalidCars.join(", ")}`);
+    }
 
     while (retries < MAX_RETRIES) {
       try {
@@ -163,5 +167,20 @@ export class ImporterProcessor {
     throw new InternalServerErrorException(
       `Failed to import ${parsedObjects.length} items after ${MAX_RETRIES} retries`,
     );
+  }
+
+  async _getInvalidCars(
+    dtos: CreateHumanBeingDto[],
+    _em?: EntityManager,
+  ): Promise<number[]> {
+    const em: EntityManager = _em || this.orm.em.fork();
+    const uniqueCarIds = Array.from(
+      new Set(dtos.filter((dto) => dto.car != null).map((dto) => dto.car!)),
+    );
+    if (uniqueCarIds.length === 0) return [];
+    const existingCars = await em.find(Car, { id: { $in: uniqueCarIds } });
+    const validCarIds = new Set(existingCars.map((car) => car.id));
+    const invalidCarIds = uniqueCarIds.filter((id) => !validCarIds.has(id));
+    return invalidCarIds;
   }
 }
