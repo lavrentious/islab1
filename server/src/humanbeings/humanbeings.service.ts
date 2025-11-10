@@ -3,11 +3,13 @@ import {
   EntityManager,
   EntityRepository,
   FilterQuery,
+  IsolationLevel,
   Loaded,
 } from "@mikro-orm/postgresql";
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from "@nestjs/common";
 import { CarsService } from "src/cars/cars.service";
@@ -37,31 +39,41 @@ export class HumanBeingsService {
 
   async create(dto: CreateHumanBeingDto): Promise<HumanBeingDto> {
     let car: Car | null = null;
-    if (dto.car) {
-      car = await this.em.findOneOrFail(
-        Car,
-        { id: dto.car },
-        {
-          failHandler: () =>
-            new BadRequestException(`Car #${dto.car} not found`),
-        },
-      );
+
+    const humanBeing = await this.em.transactional(
+      async (tx) => {
+        if (dto.car) {
+          car = await tx.findOneOrFail(
+            Car,
+            { id: dto.car },
+            {
+              failHandler: () =>
+                new BadRequestException(`Car #${dto.car} not found`),
+            },
+          );
+        }
+
+        const existing = await tx.findOne(HumanBeing, { name: dto.name });
+        if (existing) {
+          throw new BadRequestException(
+            `Human being with name "${dto.name}" already exists`,
+          );
+        }
+
+        const humanBeing = tx.create(HumanBeing, { ...dto, car } as Omit<
+          HumanBeing,
+          "id"
+        >);
+        await tx.persistAndFlush(humanBeing);
+        return humanBeing;
+      },
+      { isolationLevel: IsolationLevel.SERIALIZABLE },
+    );
+
+    if (humanBeing) {
+      return new HumanBeingDto(humanBeing);
     }
-
-    const existing = await this.repo.findOne({ name: dto.name });
-    if (existing) {
-      throw new BadRequestException(
-        `Human being with name "${dto.name}" already exists`,
-      );
-    }
-
-    const humanBeing = this.repo.create({ ...dto, car } as Omit<
-      HumanBeing,
-      "id"
-    >);
-    await this.em.flush();
-
-    return this.findOneOrFail(humanBeing.id);
+    throw new InternalServerErrorException();
   }
 
   async findAll(
@@ -157,42 +169,58 @@ export class HumanBeingsService {
       throw new BadRequestException("Request body cannot be empty");
     }
 
-    const entity = await this.repo.findOneOrFail(
-      { id },
-      {
-        failHandler: () =>
-          new NotFoundException(`Human being #${id} not found`),
-      },
-    );
-
-    const existing = await this.repo.findOne({ name: dto.name });
-    if (existing && existing.id !== id) {
-      throw new BadRequestException(
-        `Human being with name "${dto.name}" already exists`,
-      );
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { car: _, ...rest } = dto;
-    const data: Partial<Loaded<HumanBeing>> = { ...rest };
-    if (dto.car !== undefined) {
-      if (!dto.car) {
-        data.car = null;
-      } else {
-        data.car = await this.em.findOneOrFail(
-          Car,
-          { id: dto.car },
+    const humanBeing = await this.em.transactional(
+      async (tx) => {
+        const entity = await tx.findOneOrFail(
+          HumanBeing,
+          { id },
           {
             failHandler: () =>
-              new BadRequestException(`Car #${dto.car} not found`),
+              new NotFoundException(`Human being #${id} not found`),
           },
         );
-      }
+
+        if (dto.name) {
+          const existing = await tx.findOne(HumanBeing, { name: dto.name });
+          if (existing && existing.id !== id) {
+            throw new BadRequestException(
+              `Human being with name "${dto.name}" already exists`,
+            );
+          }
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { car: _, ...rest } = dto;
+        const data: Partial<Loaded<HumanBeing>> = { ...rest };
+
+        if (dto.car !== undefined) {
+          if (!dto.car) {
+            data.car = null;
+          } else {
+            data.car = await tx.findOneOrFail(
+              Car,
+              { id: dto.car },
+              {
+                failHandler: () =>
+                  new BadRequestException(`Car #${dto.car} not found`),
+              },
+            );
+          }
+        }
+
+        tx.assign(entity, data);
+        await tx.flush();
+
+        return entity;
+      },
+      { isolationLevel: IsolationLevel.SERIALIZABLE },
+    );
+
+    if (humanBeing) {
+      return new HumanBeingDto(humanBeing);
     }
 
-    this.repo.assign(entity, data);
-    await this.em.flush();
-    return new HumanBeingDto(entity);
+    throw new InternalServerErrorException();
   }
 
   async exists(id: number): Promise<boolean> {
