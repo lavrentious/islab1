@@ -115,6 +115,10 @@ export class HumanBeingsService {
       where.car = { ...(where.car as Partial<Car>), cool: params.carCool };
     }
 
+    if (params.onlyLatestVersions) {
+      where._next_version = null;
+    }
+
     // sorting
     const orderBy: Record<string, "ASC" | "DESC"> = {};
     if (params.sortBy) orderBy[params.sortBy] = params.sortOrder || "ASC";
@@ -180,13 +184,20 @@ export class HumanBeingsService {
           },
         );
 
-        if (dto.name) {
+        if (dto.name && dto.name !== entity.name) {
           const existing = await tx.findOne(HumanBeing, { name: dto.name });
           if (existing && existing.id !== id) {
             throw new BadRequestException(
               `Human being with name "${dto.name}" already exists`,
             );
           }
+          // name changed => assume it's not in the same version set anymore
+          // rechain
+          await this._detachFromVersionChain(entity, tx);
+          entity._next_version = null;
+          entity._version_root = null;
+          entity._version = 0;
+          tx.persist(entity);
         }
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -227,10 +238,75 @@ export class HumanBeingsService {
     return (await this.repo.count({ id })) == 1;
   }
 
+  async findVersions(id: number): Promise<HumanBeingDto[]> {
+    const humanBeing = await this.findOneOrFail(id);
+    const rootId = humanBeing._version_root ?? id;
+    const versions = await this.repo.find(
+      {
+        $or: [{ id: rootId }, { _version_root: rootId }],
+      },
+      { orderBy: { _version: "asc" } },
+    );
+    return versions.map((item) => new HumanBeingDto(item));
+  }
+
   async remove(id: number): Promise<void> {
-    const deleted = await this.repo.nativeDelete({ id });
-    if (deleted === 0) {
-      throw new NotFoundException(`Human being #${id} not found`);
+    return this.em.transactional(
+      async (tx) => {
+        const humanBeing = await tx.findOneOrFail(
+          HumanBeing,
+          { id },
+          {
+            failHandler: () =>
+              new NotFoundException(`Human being #${id} not found`),
+          },
+        );
+
+        // rechain version linked list
+        await this._detachFromVersionChain(humanBeing, tx);
+
+        // delete entity
+        tx.remove(humanBeing);
+
+        await tx.flush();
+      },
+      { isolationLevel: IsolationLevel.SERIALIZABLE },
+    );
+  }
+
+  /**
+   * fix linked list by rechaining after deleting the given node
+   * doesn't flush, so do `await em.flush()` after usage!
+   * @param humanBeing
+   * @param em
+   */
+  async _detachFromVersionChain(humanBeing: HumanBeing, em: EntityManager) {
+    const prevVersion = await em.findOne(HumanBeing, {
+      _next_version: humanBeing,
+    });
+    const nextVersion = humanBeing._next_version;
+
+    // link prev and next
+    if (prevVersion) {
+      prevVersion._next_version = nextVersion ?? null;
+      em.persist(prevVersion);
+    }
+
+    // if root then rechain
+    console.log(humanBeing);
+    if (!humanBeing._version_root && nextVersion) {
+      console.log("root");
+      nextVersion._version_root = null;
+      em.persist(nextVersion);
+
+      const descendants = await em.find(HumanBeing, {
+        _version_root: humanBeing,
+      });
+      for (const d of descendants) {
+        console.log("setting version root to ", nextVersion.id, "for ", d.id);
+        d._version_root = nextVersion;
+      }
+      em.persist(descendants);
     }
   }
 
