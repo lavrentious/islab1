@@ -7,7 +7,7 @@ export const importsApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: (import.meta.env.VITE_API_BASE_URL ?? "") + "/imports",
   }),
-  tagTypes: ["ImportOperation"],
+  tagTypes: ["ImportOperation", "HumanBeing"],
   endpoints: (build) => ({
     findOneImportOp: build.query<ImportOperation, number>({
       query: (id) => `/${id}`,
@@ -39,7 +39,10 @@ export const importsApi = createApi({
           body: formData,
         };
       },
-      invalidatesTags: [{ type: "ImportOperation", id: "LIST" }],
+      invalidatesTags: [
+        { type: "ImportOperation", id: "LIST" },
+        { type: "HumanBeing", id: "LIST" },
+      ],
     }),
   }),
 });
