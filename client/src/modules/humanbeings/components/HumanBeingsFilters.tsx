@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { Button, Col, Form, Row } from "react-bootstrap";
 import NullableCheckBox from "src/modules/common/components/NullableCheckBox";
 import {
@@ -50,13 +50,13 @@ const HumanBeingsFilters: React.FC<HumanBeingsFiltersProps> = ({
     }));
   };
 
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     onChange(filters);
-  };
+  }, [filters, onChange]);
 
   const resetFilters = () => {
-    setFilters({});
-    onChange({});
+    setFilters(initialFilters);
+    onChange(initialFilters);
     onReset?.();
   };
 
@@ -68,6 +68,24 @@ const HumanBeingsFilters: React.FC<HumanBeingsFiltersProps> = ({
         applyFilters();
       }}
     >
+      <Row className="g-2">
+        <Col md={4}>
+          <Form.Group>
+            <Form.Check
+              type="checkbox"
+              label="Only latest versions"
+              name="onlyLatestVersions"
+              checked={filters.onlyLatestVersions ?? false}
+              onChange={(e) =>
+                handleBooleanChange(
+                  "onlyLatestVersions",
+                  e.target.checked.toString(),
+                )
+              }
+            />
+          </Form.Group>
+        </Col>
+      </Row>
       <Row className="g-2">
         <Col md={4}>
           <Form.Group controlId="filterName">

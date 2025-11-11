@@ -23,7 +23,7 @@ const MainPage = () => {
 
   const [filters, setFilters] = useState<
     Partial<FindAllHumanbeingsQueryParamsDto>
-  >({});
+  >({ onlyLatestVersions: true });
 
   const [sortBy, setSortBy] = useState<
     FindAllHumanbeingsQueryParamsDto["sortBy"] | null
@@ -78,7 +78,11 @@ const MainPage = () => {
           <HumanBeingsSpecialsButton />
         </div>
         <hr />
-        <HumanBeingsFilters disabled={isLoading} onChange={setFilters} />
+        <HumanBeingsFilters
+          initialFilters={filters}
+          disabled={isLoading}
+          onChange={setFilters}
+        />
         <hr />
         <HumanBeingsTable
           items={data?.items ?? null}
