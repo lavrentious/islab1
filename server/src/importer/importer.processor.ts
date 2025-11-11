@@ -141,7 +141,7 @@ export class ImporterProcessor {
                   _version: existing._version + 1,
                   _version_root: existing._version_root
                     ? existing._version_root
-                    : existing.id,
+                    : existing,
                   creationDate: new Date(),
                 });
                 existing._next_version = humanBeing;
