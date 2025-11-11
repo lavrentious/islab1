@@ -140,6 +140,21 @@ const HumanBeingsTable: React.FC<HumanBeingsTableProps> = ({
         header: "Weapon",
         accessorKey: "weaponType",
       },
+      {
+        header: "Version",
+        cell: ({ row }) =>
+          row.original._next_version == null ? (
+            <strong className="text-success" title="Latest version">
+              {row.original._version}
+            </strong>
+          ) : (
+            <i
+              title={`Next version - Human Being #${row.original._next_version}`}
+            >
+              {row.original._version}
+            </i>
+          ),
+      },
     ],
     [],
   );

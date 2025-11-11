@@ -1,8 +1,10 @@
 import React, { useMemo } from "react";
-import { Card, ListGroup } from "react-bootstrap";
+import { Badge, Card, ListGroup } from "react-bootstrap";
+import { Link } from "react-router";
 import { useFindOneCarQuery } from "src/modules/cars/api";
 import CarCard from "src/modules/cars/components/CarCard";
 import { HumanBeing } from "../api/types";
+import HumanBeingVersionsTimeline from "./HumanBeingVersionsTimeline";
 
 interface HumanBeingCardProps {
   humanBeing: HumanBeing;
@@ -25,7 +27,7 @@ const HumanBeingCard: React.FC<HumanBeingCardProps> = ({
   );
 
   return (
-    <Card>
+    <Card className="mb-3">
       <Card.Header>
         {link ? (
           <a href={`/humanbeings/${humanBeing.id}`}>
@@ -37,6 +39,22 @@ const HumanBeingCard: React.FC<HumanBeingCardProps> = ({
       </Card.Header>
       <ListGroup variant="flush">
         <ListGroup.Item>ID: {humanBeing.id}</ListGroup.Item>
+        <ListGroup.Item>
+          Version: {humanBeing._version}{" "}
+          {humanBeing._next_version == null ? (
+            <Badge bg="success">latest</Badge>
+          ) : (
+            <>
+              <Badge bg="warning">outdated</Badge>
+              <Link
+                className="ms-2"
+                to={`/humanbeings/${humanBeing._next_version}`}
+              >
+                Next Version
+              </Link>
+            </>
+          )}
+        </ListGroup.Item>
         <ListGroup.Item>Name: {humanBeing.name}</ListGroup.Item>
         <ListGroup.Item>
           Real Hero: {humanBeing.realHero ? "Yes" : "No"}
@@ -66,6 +84,10 @@ const HumanBeingCard: React.FC<HumanBeingCardProps> = ({
         </ListGroup.Item>
         <ListGroup.Item>
           Car: {car ? <CarCard car={car} link={carLink} /> : "N/A"}
+        </ListGroup.Item>
+        <ListGroup.Item>
+          Version History:
+          <HumanBeingVersionsTimeline id={humanBeing.id} />
         </ListGroup.Item>
       </ListGroup>
     </Card>

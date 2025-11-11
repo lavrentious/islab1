@@ -10,7 +10,7 @@ import React, { useMemo } from "react";
 import { Badge, Spinner, Table } from "react-bootstrap";
 import { FaArrowDown, FaArrowUp } from "react-icons/fa";
 import { useNavigate } from "react-router";
-import { useFindOneImportOpQuery } from "../api"; // 👈 child hook
+import { useFindOneImportOpQuery } from "../api";
 import { ImportOperation, ImportStatus } from "../api/types";
 
 interface Props {
