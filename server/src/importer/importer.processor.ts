@@ -10,7 +10,10 @@ import {
   InternalServerErrorException,
 } from "@nestjs/common";
 import { type Job } from "bull";
+import objectHash from "object-hash";
 import * as path from "path";
+import { CreateCarDto } from "src/cars/dto/create-car.dto";
+import { Car } from "src/cars/entities/car.entity";
 import { CreateHumanBeingDto } from "src/humanbeings/dto/create-humanbeing.dto";
 import { HumanBeing } from "src/humanbeings/entities/humanbeing.entity";
 import { Worker } from "worker_threads";
@@ -18,8 +21,6 @@ import {
   ImportOperation,
   ImportStatus,
 } from "./entities/importoperation.entity";
-
-import { Car } from "src/cars/entities/car.entity";
 import { ImporterProcessorPayload, ImportWorkerPayload } from "./types";
 
 const MAX_RETRIES = 20;
@@ -66,6 +67,7 @@ export class ImporterProcessor {
           console.error("processor: error saving to db", e);
           importOp.errorMessage = "internal error (db)";
         } else if (e instanceof Error) {
+          console.error("processor: UNKNOWN ERROR", e);
           importOp.errorMessage = e.message;
         }
       } finally {
@@ -99,14 +101,43 @@ export class ImporterProcessor {
     });
   }
 
+  private _hashCar(dto: CreateCarDto) {
+    return objectHash(dto);
+  }
+
   private async saveToDatabase(parsedObjects: CreateHumanBeingDto[]): Promise<{
     okCount: number;
     duplicateCount: number;
   }> {
     let retries = 0;
-    const invalidCars = await this._getInvalidCars(parsedObjects);
+    const uniqueCarIds = Array.from(
+      new Set(
+        parsedObjects
+          .filter((dto) => dto.car != null && typeof dto.car === "number")
+          .map((dto) => dto.car as number),
+      ),
+    );
+    const invalidCars = await this._getInvalidCarIds(uniqueCarIds);
     if (invalidCars.length > 0) {
       throw new BadRequestException(`Invalid cars: ${invalidCars.join(", ")}`);
+    }
+
+    // create cars as dtos
+    const carDtoMap = new Map<string, CreateCarDto>(); // hash dto -> dto
+    for (const dto of parsedObjects) {
+      if (dto.car && typeof dto.car === "object") {
+        const hash = this._hashCar(dto.car);
+        carDtoMap.set(hash, dto.car);
+      }
+    }
+    console.log("unique cars:", carDtoMap);
+    const takenCarNames = await this._getTakenCarNames(
+      Array.from(carDtoMap.values()),
+    );
+    if (takenCarNames.length > 0) {
+      throw new BadRequestException(
+        `Car name must be unique - unavailable car names: ${takenCarNames.map((name) => `"${name}"`).join(", ")}`,
+      );
     }
 
     const humanNames = new Set<string>(parsedObjects.map((dto) => dto.name));
@@ -114,10 +145,18 @@ export class ImporterProcessor {
     while (retries < MAX_RETRIES) {
       try {
         const em = this.orm.em.fork();
+
         let okCount = 0;
         let duplicateCount = 0;
         const res = await em.transactional(
           async (tx) => {
+            // create cars as dtos
+            const carMap = new Map<string, Car>(); // hash dto -> car entity
+            for (const [hash, dto] of carDtoMap.entries()) {
+              const car = tx.create(Car, dto as Omit<Car, "id">);
+              carMap.set(hash, car);
+            }
+
             const fromDB: HumanBeing[] = humanNames.size
               ? await tx.find(HumanBeing, {
                   name: { $in: [...humanNames] },
@@ -134,10 +173,17 @@ export class ImporterProcessor {
               // find duplicates
               const existing = hbMap.get(dto.name);
 
+              let car: Car | undefined;
+              if (dto.car && typeof dto.car === "object") {
+                const hash = this._hashCar(dto.car);
+                car = carMap.get(hash);
+              }
+
               if (existing) {
                 // duplicates found
                 const humanBeing = tx.create(HumanBeing, {
                   ...dto,
+                  car,
                   _version: existing._version + 1,
                   _version_root: existing._version_root
                     ? existing._version_root
@@ -153,6 +199,7 @@ export class ImporterProcessor {
               } else {
                 const humanBeing = tx.create(HumanBeing, {
                   ...dto,
+                  car,
                   _version: 0,
                   creationDate: new Date(),
                 });
@@ -162,6 +209,7 @@ export class ImporterProcessor {
               }
             }
             tx.persist(toPersist);
+            tx.persist(carMap.values());
             await tx.flush();
 
             console.log(
@@ -186,18 +234,39 @@ export class ImporterProcessor {
     );
   }
 
-  async _getInvalidCars(
-    dtos: CreateHumanBeingDto[],
+  /**
+   * check that provided car ids exist
+   * @param dtos
+   * @param _em
+   * @returns
+   */
+  async _getInvalidCarIds(
+    ids: number[],
     _em?: EntityManager,
   ): Promise<number[]> {
+    if (ids.length === 0) return [];
     const em: EntityManager = _em || this.orm.em.fork();
-    const uniqueCarIds = Array.from(
-      new Set(dtos.filter((dto) => dto.car != null).map((dto) => dto.car!)),
-    );
-    if (uniqueCarIds.length === 0) return [];
-    const existingCars = await em.find(Car, { id: { $in: uniqueCarIds } });
+    const existingCars = await em.find(Car, { id: { $in: ids } });
     const validCarIds = new Set(existingCars.map((car) => car.id));
-    const invalidCarIds = uniqueCarIds.filter((id) => !validCarIds.has(id));
+    const invalidCarIds = ids.filter((id) => !validCarIds.has(id));
     return invalidCarIds;
+  }
+
+  /**
+   * check all car dtos are valid - names available (because names are unique)
+   * @param dtos
+   * @param _em
+   * @returns
+   */
+  async _getTakenCarNames(
+    dtos: CreateCarDto[],
+    _em?: EntityManager,
+  ): Promise<string[]> {
+    const uniqueCarNames = Array.from(new Set(dtos.map((dto) => dto.name)));
+    if (uniqueCarNames.length === 0) return [];
+    const em: EntityManager = _em || this.orm.em.fork();
+    const existingCars = await em.find(Car, { name: { $in: uniqueCarNames } });
+    const takenCarNames = existingCars.map((car) => car.name);
+    return takenCarNames;
   }
 }
