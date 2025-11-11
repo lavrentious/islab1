@@ -33,16 +33,6 @@
           "primary": false,
           "nullable": true,
           "mappedType": "boolean"
-        },
-        "_version": {
-          "name": "_version",
-          "type": "int",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": false,
-          "default": "0",
-          "mappedType": "integer"
         }
       },
       "name": "car",
