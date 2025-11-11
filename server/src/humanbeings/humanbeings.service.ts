@@ -245,7 +245,7 @@ export class HumanBeingsService {
       {
         $or: [{ id: rootId }, { _version_root: rootId }],
       },
-      { orderBy: { _version: "asc" } },
+      { orderBy: { _version: "asc" }, populate: false },
     );
     return versions.map((item) => new HumanBeingDto(item));
   }

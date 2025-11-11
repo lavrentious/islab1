@@ -37,6 +37,19 @@ export const humanBeingsApi = createApi({
             ]
           : [{ type: "HumanBeing", id: "LIST" }],
     }),
+    findHumanBeingVersions: build.query<HumanBeing[], number>({
+      query: (id) => `/${id}/versions`,
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.map(({ id }) => ({
+                type: "HumanBeing" as const,
+                id,
+              })),
+              { type: "HumanBeing", id: "LIST" },
+            ]
+          : [{ type: "HumanBeing", id: "LIST" }],
+    }),
     createHumanBeing: build.mutation<HumanBeing, CreateHumanBeingDto>({
       query: (body) => ({
         url: "/",
@@ -112,4 +125,5 @@ export const {
   useLazyCountImpactSpeedLessThanQuery,
   useAssignCarToCarlessMutation,
   useDeleteWithoutToothpicksMutation,
+  useFindHumanBeingVersionsQuery,
 } = humanBeingsApi;

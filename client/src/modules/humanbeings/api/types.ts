@@ -45,6 +45,10 @@ export class HumanBeing {
   soundtrackName!: string;
   minutesOfWaiting!: number | null;
   weaponType!: WeaponType;
+
+  _version: number = 0;
+  _next_version!: number | null; // next version - child
+  _version_root!: number | null;
 }
 
 export class CreateHumanBeingDto {
@@ -61,6 +65,8 @@ export class CreateHumanBeingDto {
 }
 
 export class FindAllHumanbeingsQueryParamsDto extends PaginateParams {
+  onlyLatestVersions?: boolean;
+
   // filters
   name?: string;
   realHero?: boolean;
