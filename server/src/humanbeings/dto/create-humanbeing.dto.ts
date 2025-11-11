@@ -13,7 +13,9 @@ import {
   MaxLength,
   ValidateNested,
 } from "class-validator";
+import { CreateCarDto } from "src/cars/dto/create-car.dto";
 import { Mood, WeaponType } from "../entities/humanbeing.entity";
+import { IsCarIdOrValidCarDto } from "../validation/is-car-id-or-car-dto";
 
 export class CoordinatesDto {
   @ApiProperty({ example: 12.34, description: "X coordinate (float)" })
@@ -51,10 +53,17 @@ export class CreateHumanBeingDto {
   @IsBoolean()
   hasToothpick?: boolean | null;
 
-  @ApiPropertyOptional({ example: 1, description: "Existing car ID" })
+  @ApiPropertyOptional({
+    example: 1,
+    description: "Existing car ID or new car data",
+    oneOf: [{ type: "integer" }, { $ref: "#/components/schemas/CreateCarDto" }],
+  })
   @IsOptional()
-  @IsInt()
-  car?: number;
+  @IsCarIdOrValidCarDto({
+    message:
+      "car must be either a valid ID (number) or a valid CreateCarDto object",
+  })
+  car?: number | CreateCarDto;
 
   @ApiProperty({ enum: Mood, description: "Current mood" })
   @IsEnum(Mood)

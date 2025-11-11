@@ -43,14 +43,20 @@ export class HumanBeingsService {
     const humanBeing = await this.em.transactional(
       async (tx) => {
         if (dto.car) {
-          car = await tx.findOneOrFail(
-            Car,
-            { id: dto.car },
-            {
-              failHandler: () =>
-                new BadRequestException(`Car #${dto.car} not found`),
-            },
-          );
+          if (typeof dto.car === "number") {
+            car = await tx.findOneOrFail(
+              Car,
+              { id: dto.car },
+              {
+                failHandler: () =>
+                  new BadRequestException(
+                    `Car #${dto.car as number} not found`,
+                  ),
+              },
+            );
+          } else {
+            car = await this.carsService.create(dto.car);
+          }
         }
 
         const existing = await tx.findOne(HumanBeing, { name: dto.name });
@@ -207,15 +213,19 @@ export class HumanBeingsService {
         if (dto.car !== undefined) {
           if (!dto.car) {
             data.car = null;
-          } else {
+          } else if (typeof dto.car === "number") {
             data.car = await tx.findOneOrFail(
               Car,
               { id: dto.car },
               {
                 failHandler: () =>
-                  new BadRequestException(`Car #${dto.car} not found`),
+                  new BadRequestException(
+                    `Car #${dto.car as number} not found`,
+                  ),
               },
             );
+          } else {
+            data.car = await this.carsService.create(dto.car);
           }
         }
 
