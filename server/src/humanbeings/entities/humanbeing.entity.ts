@@ -88,10 +88,10 @@ export class HumanBeing {
   @Property({ default: 0 })
   _version: number = 0; // TODO: add constraint (> 0)
 
-  @ManyToOne(() => HumanBeing, { nullable: true, default: null })
+  @ManyToOne({ entity: () => HumanBeing, nullable: true, default: null })
   _next_version?: HumanBeing | null; // next version - child
 
   // root parent, just to not traverse the whole tree every time
-  @ManyToOne(() => HumanBeing, { nullable: true, default: null })
+  @ManyToOne({ entity: () => HumanBeing, nullable: true, default: null })
   _version_root?: HumanBeing | null;
 }

@@ -9,6 +9,8 @@ export class HumanBeingDto
   constructor(humanBeing: HumanBeing) {
     Object.assign(this, humanBeing);
     this.car = humanBeing.car?.id ?? null;
+    this._next_version = humanBeing._next_version?.id ?? null;
+    this._version_root = humanBeing._version_root?.id ?? null;
   }
 
   @ApiProperty()
@@ -59,12 +61,12 @@ export class HumanBeingDto
   _version!: number;
 
   @ApiProperty({ example: 1, description: "Next version ID", nullable: true })
-  _next_version?: number;
+  _next_version!: number | null;
 
   @ApiProperty({
     example: 1,
-    description: "Previous version ID",
+    description: "Root version ID",
     nullable: true,
   })
-  _version_root?: number;
+  _version_root!: number | null;
 }
