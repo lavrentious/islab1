@@ -9,6 +9,12 @@ import {
 import { HumanBeing, Mood, WeaponType } from "../entities/humanbeing.entity";
 
 export class FindAllHumanbeingsQueryParamsDto extends PaginateParams {
+  @ApiPropertyOptional()
+  @Transform(({ value }) => booleanFromString(value as string))
+  @IsBoolean()
+  @IsOptional()
+  onlyLatestVersions?: boolean;
+
   // filters
   @ApiPropertyOptional({ example: "joe biden" })
   @IsOptional()
