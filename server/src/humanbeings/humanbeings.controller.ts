@@ -63,6 +63,18 @@ export class HumanBeingsController {
     return this.service.findOneOrFail(+id);
   }
 
+  @ApiOperation({ summary: "Find human being's chain of versions" })
+  @ApiResponse({
+    status: 200,
+    type: [HumanBeingDto],
+    description: "Human found successfully",
+  })
+  @ApiResponse({ status: 404, description: "Human being not found." })
+  @Get(":id/versions")
+  async findVersions(@Param("id") id: string): Promise<HumanBeingDto[]> {
+    return this.service.findVersions(+id);
+  }
+
   @ApiOperation({ summary: "Update human being" })
   @ApiResponse({ status: 404, description: "Human being not found." })
   @ApiResponse({ status: 400, description: "Bad request" })
