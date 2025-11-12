@@ -34,8 +34,8 @@ const MAX_RETRIES = 20;
 export class ImporterProcessor {
   constructor(private readonly orm: MikroORM) {}
 
-  @Process({ name: "import-yaml", concurrency: 2 }) // concurrency: 13
-  async importYaml(job: Job<ImporterProcessorPayload>) {
+  @Process({ name: "import-file", concurrency: 2 }) // concurrency: 13
+  async importFile(job: Job<ImporterProcessorPayload>) {
     const em = this.orm.em.fork();
     const importOp = await em.findOne(ImportOperation, {
       id: job.data.importOp,
