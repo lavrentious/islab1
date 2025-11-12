@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Button, Form } from "react-bootstrap";
 import toast from "react-hot-toast";
+import { formatApiError } from "src/modules/common/api/utils";
 import { useUploadImportFileMutation } from "../api";
 
 const ImportUploadForm = () => {
@@ -11,14 +12,15 @@ const ImportUploadForm = () => {
     e.preventDefault();
     if (!file) return;
 
-    try {
-      await uploadImportFile(file).unwrap();
-      toast.success("file uploaded");
-      setFile(null);
-    } catch (err) {
-      console.error(err);
-      toast.error("error uploading file");
-    }
+    await uploadImportFile(file)
+      .unwrap()
+      .then(() => {
+        toast.success("file uploaded");
+        setFile(null);
+      })
+      .catch((e) => {
+        toast.error(formatApiError(e));
+      });
   };
 
   return (
