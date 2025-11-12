@@ -96,7 +96,7 @@ export class ImporterService {
     });
     await this.em.persistAndFlush(importOp);
 
-    const job = await this.importQueue.add("import-yaml", {
+    const job = await this.importQueue.add("import-file", {
       filePath,
       importOp: importOp.id,
     });
