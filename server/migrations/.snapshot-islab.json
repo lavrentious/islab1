@@ -360,15 +360,6 @@
           "nullable": true,
           "mappedType": "integer"
         },
-        "failed_count": {
-          "name": "failed_count",
-          "type": "int",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": true,
-          "mappedType": "integer"
-        },
         "duplicate_count": {
           "name": "duplicate_count",
           "type": "int",
@@ -385,6 +376,16 @@
           "autoincrement": false,
           "primary": false,
           "nullable": false,
+          "length": 6,
+          "mappedType": "datetime"
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "timestamptz",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
           "length": 6,
           "mappedType": "datetime"
         },
