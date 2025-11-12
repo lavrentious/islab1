@@ -317,6 +317,16 @@
           "length": 255,
           "mappedType": "string"
         },
+        "file_hash": {
+          "name": "file_hash",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "length": 255,
+          "mappedType": "string"
+        },
         "status": {
           "name": "status",
           "type": "text",
