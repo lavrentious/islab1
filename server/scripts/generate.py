@@ -1,4 +1,6 @@
 import argparse
+import json
+import os
 import random
 
 import yaml
@@ -45,17 +47,16 @@ def generate_human(
         "soundtrackName": f"Track_{random.randint(1,100)}",
         "minutesOfWaiting": random.choice([None, random.randint(1, 120)]),
         "weaponType": random.choice(WEAPON_TYPES),
-        "_version": random.randint(1, 10),
     }
 
 
-def generate_yaml(
+def generate_entities(
     num_entities: int,
     car_ids: list[int],
     start_id: int = 1,
     duplicate_chance: float = 0.1,
     use_car_object_chance: float = 0.15,
-) -> str:
+) -> list[dict]:
     """
     Generates humans with occasional duplicate names and occasional full car objects.
     """
@@ -74,13 +75,28 @@ def generate_yaml(
             generate_human(i + start_id, name, car_ids, use_car_object_chance)
         )
 
-    return yaml.dump(humans, sort_keys=False, allow_unicode=True)
+    return humans
+
+
+def serialize_data(data: list[dict], output_path: str) -> str:
+    """
+    Serialize data based on file extension.
+    Supported: .yaml, .yml, .json
+    """
+    ext = os.path.splitext(output_path)[1].lower()
+
+    if ext in (".yaml", ".yml"):
+        return yaml.dump(data, sort_keys=False, allow_unicode=True)
+    elif ext == ".json":
+        return json.dumps(data, indent=2, ensure_ascii=False)
+    else:
+        raise ValueError(f"Unsupported file format '{ext}'. Use .yaml, .yml, or .json.")
 
 
 # --- CLI ---
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Generate YAML for HumanBeing entities (with duplicates and car objects)."
+        description="Generate entities (HumanBeing) data in YAML or JSON format."
     )
     parser.add_argument(
         "-n", "--num", type=int, required=True, help="Number of entities to generate."
@@ -92,7 +108,10 @@ if __name__ == "__main__":
         "--cars", nargs="+", type=int, required=True, help="List of available car IDs."
     )
     parser.add_argument(
-        "-o", "--output", default="humans.yaml", help="Output YAML filename."
+        "-o",
+        "--output",
+        default="humans.yaml",
+        help="Output filename (.yaml, .yml, or .json).",
     )
     parser.add_argument(
         "-d",
@@ -111,7 +130,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    yaml_output = generate_yaml(
+    humans = generate_entities(
         args.num,
         args.cars,
         args.start_id,
@@ -119,8 +138,10 @@ if __name__ == "__main__":
         args.car_object_chance,
     )
 
+    output_data = serialize_data(humans, args.output)
+
     with open(args.output, "w", encoding="utf-8") as f:
-        f.write(yaml_output)
+        f.write(output_data)
 
     print(
         f"✅ Generated {args.num} HumanBeing entities to '{args.output}' "

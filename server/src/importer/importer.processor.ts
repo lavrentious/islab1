@@ -7,6 +7,7 @@ import {
 import { Process, Processor } from "@nestjs/bull";
 import {
   BadRequestException,
+  HttpException,
   InternalServerErrorException,
 } from "@nestjs/common";
 import { type Job } from "bull";
@@ -21,7 +22,11 @@ import {
   ImportOperation,
   ImportStatus,
 } from "./entities/importoperation.entity";
-import { ImporterProcessorPayload, ImportWorkerPayload } from "./types";
+import {
+  ImporterProcessorPayload,
+  ImportWorkerPayload,
+  ImportWorkerResult,
+} from "./types";
 
 const MAX_RETRIES = 20;
 
@@ -45,7 +50,7 @@ export class ImporterProcessor {
     console.log("processor: running worker...");
     const data = (await this.runWorker(
       job.data.filePath,
-    )) as ImportWorkerPayload;
+    )) as ImportWorkerResult;
     console.log(
       `processor: received data from worker: ${data.validItems.length} items`,
     );
@@ -61,11 +66,13 @@ export class ImporterProcessor {
         importOp.okCount = res.okCount;
         importOp.duplicateCount = res.duplicateCount;
       } catch (e) {
-        console.log("processor: error saving to db", e);
         importOp.status = ImportStatus.FAILED;
         if (e instanceof DriverException) {
           console.error("processor: error saving to db", e);
           importOp.errorMessage = "internal error (db)";
+        } else if (e instanceof HttpException) {
+          console.error("processor: error saving to db (http)", e);
+          importOp.errorMessage = e.message;
         } else if (e instanceof Error) {
           console.error("processor: UNKNOWN ERROR", e);
           importOp.errorMessage = e.message;
@@ -87,8 +94,10 @@ export class ImporterProcessor {
 
   private runWorker(filePath: string) {
     return new Promise((resolve, reject) => {
-      const worker = new Worker(path.join(__dirname, "yaml.worker.js"), {
-        workerData: { filePath },
+      const worker = new Worker(path.join(__dirname, "generic.worker.js"), {
+        workerData: {
+          filePath,
+        } satisfies ImportWorkerPayload,
       });
       worker.on("message", resolve);
       worker.on("error", reject);
