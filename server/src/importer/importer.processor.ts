@@ -119,6 +119,7 @@ export class ImporterProcessor {
     duplicateCount: number;
   }> {
     let retries = 0;
+
     const uniqueCarIds = Array.from(
       new Set(
         parsedObjects
@@ -126,10 +127,6 @@ export class ImporterProcessor {
           .map((dto) => dto.car as number),
       ),
     );
-    const invalidCars = await this._getInvalidCarIds(uniqueCarIds);
-    if (invalidCars.length > 0) {
-      throw new BadRequestException(`Invalid cars: ${invalidCars.join(", ")}`);
-    }
 
     // create cars as dtos
     const carDtoMap = new Map<string, CreateCarDto>(); // hash dto -> dto
@@ -138,15 +135,6 @@ export class ImporterProcessor {
         const hash = this._hashCar(dto.car);
         carDtoMap.set(hash, dto.car);
       }
-    }
-    console.log("unique cars:", carDtoMap);
-    const takenCarNames = await this._getTakenCarNames(
-      Array.from(carDtoMap.values()),
-    );
-    if (takenCarNames.length > 0) {
-      throw new BadRequestException(
-        `Car name must be unique - unavailable car names: ${takenCarNames.map((name) => `"${name}"`).join(", ")}`,
-      );
     }
 
     const humanNames = new Set<string>(parsedObjects.map((dto) => dto.name));
@@ -159,6 +147,26 @@ export class ImporterProcessor {
         let duplicateCount = 0;
         const res = await em.transactional(
           async (tx) => {
+            //check car ids
+            const invalidCars = await this._getInvalidCarIds(uniqueCarIds, tx);
+            if (invalidCars.length > 0) {
+              throw new BadRequestException(
+                `Invalid cars: ${invalidCars.join(", ")}`,
+              );
+            }
+
+            // check car dtos
+            console.log("unique cars:", carDtoMap);
+            const takenCarNames = await this._getTakenCarNames(
+              Array.from(carDtoMap.values()),
+              tx,
+            );
+            if (takenCarNames.length > 0) {
+              throw new BadRequestException(
+                `Car name must be unique - unavailable car names: ${takenCarNames.map((name) => `"${name}"`).join(", ")}`,
+              );
+            }
+
             // create cars as dtos
             const carMap = new Map<string, Car>(); // hash dto -> car entity
             for (const [hash, dto] of carDtoMap.entries()) {
