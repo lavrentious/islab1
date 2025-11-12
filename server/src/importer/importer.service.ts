@@ -21,6 +21,8 @@ import {
 } from "./entities/importoperation.entity";
 import { ImporterProcessorPayload } from "./types";
 
+const ALLOWED_FILE_EXTS = ["yaml", "yml"];
+
 @Injectable()
 export class ImporterService {
   constructor(
@@ -57,6 +59,14 @@ export class ImporterService {
   }
 
   async enqueueImport(file: Express.Multer.File) {
+    // validate file
+    const ext = path.extname(file.originalname).slice(1);
+    if (!ALLOWED_FILE_EXTS.includes(ext.toLowerCase())) {
+      throw new BadRequestException(
+        `Unsupported file type: ${ext}. Only ${ALLOWED_FILE_EXTS.join(", ")} files are allowed`,
+      );
+    }
+
     // save file in temp dir
     const fileName = uuid();
     const tempDir = path.join(this.configService.get("TMP_DIR")!, "/uploads");
