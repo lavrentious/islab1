@@ -12,6 +12,7 @@ import { FaArrowDown, FaArrowUp } from "react-icons/fa";
 import { useNavigate } from "react-router";
 import { useFindOneImportOpQuery } from "../api";
 import { ImportOperation, ImportStatus } from "../api/types";
+import { timeDiffToPreciseString } from "../utils";
 
 interface Props {
   items: ImportOperation[] | null;
@@ -57,12 +58,17 @@ const ImportOperationsTable: React.FC<Props> = ({
       },
       { header: "Total", accessorKey: "entryCount" },
       { header: "OK", accessorKey: "okCount" },
-      { header: "Failed", accessorKey: "failedCount" },
       { header: "Duplicates", accessorKey: "duplicateCount" },
       {
         header: "Created At",
         accessorKey: "createdAt",
         cell: ({ getValue }) => new Date(getValue() as string).toLocaleString(),
+      },
+      {
+        header: "Started At",
+        accessorKey: "startedAt",
+        cell: ({ getValue }) =>
+          getValue() ? new Date(getValue() as string).toLocaleString() : "—",
       },
       {
         header: "Finished At",
@@ -74,13 +80,22 @@ const ImportOperationsTable: React.FC<Props> = ({
         header: "Duration",
         id: "duration",
         cell: ({ row }) => {
-          const { createdAt, finishedAt } = row.original;
+          const { createdAt, startedAt, finishedAt } = row.original;
           if (!finishedAt) return "—";
-          const diffSec = dayjs(finishedAt).diff(dayjs(createdAt)) / 1000;
-          if (diffSec < 60) return `${diffSec.toFixed(3)} s`;
-          const m = Math.floor(diffSec / 60);
-          const s = (diffSec % 60).toFixed(3);
-          return `${m}m ${s}s`;
+          const totalDuration = dayjs(finishedAt).diff(dayjs(createdAt)) / 1000; // in sec
+          const processDuration =
+            dayjs(finishedAt).diff(dayjs(startedAt)) / 1000; // in sec
+          if (startedAt) {
+            return (
+              <>
+                <div>{timeDiffToPreciseString(processDuration)}</div>
+                <div className="text-muted">
+                  ({timeDiffToPreciseString(totalDuration)} total)
+                </div>
+              </>
+            );
+          }
+          return timeDiffToPreciseString(totalDuration);
         },
       },
       {

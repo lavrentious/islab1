@@ -44,6 +44,7 @@ export class ImporterProcessor {
       throw new InternalServerErrorException("importOp not found");
     }
     importOp.status = ImportStatus.IN_PROGRESS;
+    importOp.startedAt = new Date();
     await em.persistAndFlush(importOp);
 
     // parse

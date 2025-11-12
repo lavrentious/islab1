@@ -12,9 +12,9 @@ export class ImportOperation {
   status!: ImportStatus;
   entryCount?: number;
   okCount?: number;
-  failedCount?: number;
   duplicateCount?: number;
   createdAt!: Date;
+  startedAt?: Date;
   finishedAt?: Date;
   errorMessage?: string;
 }

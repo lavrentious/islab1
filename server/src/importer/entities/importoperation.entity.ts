@@ -28,13 +28,13 @@ export class ImportOperation {
   okCount?: number;
 
   @Property({ nullable: true })
-  failedCount?: number;
-
-  @Property({ nullable: true })
   duplicateCount?: number;
 
   @Property({ onCreate: () => new Date() })
   createdAt: Date = new Date();
+
+  @Property({ nullable: true })
+  startedAt?: Date;
 
   @Property({ nullable: true })
   finishedAt?: Date;
