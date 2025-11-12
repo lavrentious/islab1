@@ -19,9 +19,8 @@ import {
   ImportOperation,
   ImportStatus,
 } from "./entities/importoperation.entity";
+import { getAllowedFileExtensions } from "./parsers";
 import { ImporterProcessorPayload } from "./types";
-
-const ALLOWED_FILE_EXTS = ["yaml", "yml"];
 
 @Injectable()
 export class ImporterService {
@@ -61,14 +60,15 @@ export class ImporterService {
   async enqueueImport(file: Express.Multer.File) {
     // validate file
     const ext = path.extname(file.originalname).slice(1);
-    if (!ALLOWED_FILE_EXTS.includes(ext.toLowerCase())) {
+    const allowedFileExtensions = getAllowedFileExtensions();
+    if (!allowedFileExtensions.includes(ext.toLowerCase())) {
       throw new BadRequestException(
-        `Unsupported file type: ${ext}. Only ${ALLOWED_FILE_EXTS.join(", ")} files are allowed`,
+        `Unsupported file type: ${ext}. Only ${allowedFileExtensions.join(", ")} files are allowed`,
       );
     }
 
     // save file in temp dir
-    const fileName = uuid();
+    const fileName = uuid() + "." + ext;
     const tempDir = path.join(this.configService.get("TMP_DIR")!, "/uploads");
     if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
     const filePath = path.join(tempDir, fileName);

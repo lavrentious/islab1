@@ -1,31 +1,40 @@
-// yaml.worker.ts
 import { plainToClass } from "class-transformer";
 import { validate } from "class-validator";
 import * as fs from "fs";
-import * as yaml from "js-yaml";
+import * as path from "path";
 import { parentPort, workerData } from "worker_threads";
 import { CreateHumanBeingDto } from "../humanbeings/dto/create-humanbeing.dto";
-import { ImportWorkerPayload } from "./types";
+import { getParser } from "./parsers";
+import { ImportWorkerPayload, ImportWorkerResult } from "./types";
 
+// parses + validates (CPU heavy)
 void (async () => {
-  const content = fs.readFileSync(
-    (workerData as { filePath: string }).filePath,
-    "utf-8",
-  );
+  const data = workerData as ImportWorkerPayload;
   console.log("worker: parsing...");
   try {
-    const parsed = yaml.load(content);
-    const validItems: CreateHumanBeingDto[] = [];
+    const content = fs.readFileSync(data.filePath, "utf-8");
+    const ext = path.extname(data.filePath).slice(1);
+    const parse = getParser(ext);
+    if (!parse) {
+      parentPort?.postMessage({
+        validItems: [],
+        ok: false,
+        msg: "unsupported file type",
+      } satisfies ImportWorkerResult);
+      return;
+    }
+    const parsed = parse(content);
 
     if (!Array.isArray(parsed)) {
       parentPort?.postMessage({
-        validItems,
+        validItems: [],
         ok: false,
         msg: "not an array",
-      } satisfies ImportWorkerPayload);
+      } satisfies ImportWorkerResult);
       return;
     }
 
+    const validItems: CreateHumanBeingDto[] = [];
     for (const obj of parsed) {
       const dto = plainToClass(CreateHumanBeingDto, obj);
       const errors = await validate(dto);
@@ -36,12 +45,12 @@ void (async () => {
     parentPort?.postMessage({
       validItems,
       ok: true,
-    } satisfies ImportWorkerPayload);
+    } satisfies ImportWorkerResult);
   } catch (e: unknown) {
     parentPort?.postMessage({
       validItems: [],
       ok: false,
       error: e,
-    } satisfies ImportWorkerPayload);
+    } satisfies ImportWorkerResult);
   }
 })();
