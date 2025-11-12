@@ -77,9 +77,14 @@ export class ImporterService {
     // get file hash
     const hash = crypto.createHash("sha256").update(file.buffer).digest("hex");
     console.log("file hash", hash);
-    const existing = await this.repo.count({ fileHash: hash });
+    const existing = await this.repo.count({
+      fileHash: hash,
+      status: { $ne: ImportStatus.FAILED },
+    });
     if (existing > 0) {
-      throw new BadRequestException(`File with hash "${hash}" already exists`);
+      throw new BadRequestException(
+        `File with hash "${hash}" can't be imported (not failed)`,
+      );
     }
 
     // create job & enqueue
