@@ -1,9 +1,15 @@
 import { InjectRepository } from "@mikro-orm/nestjs";
 import { EntityManager, EntityRepository } from "@mikro-orm/postgresql";
 import { InjectQueue } from "@nestjs/bull";
-import { Inject, Injectable, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { type Queue } from "bull";
+import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
 import { EnvironmentVariables } from "src/env.validation";
@@ -58,9 +64,18 @@ export class ImporterService {
     const filePath = path.join(tempDir, fileName);
     fs.writeFileSync(filePath, file.buffer);
 
+    // get file hash
+    const hash = crypto.createHash("sha256").update(file.buffer).digest("hex");
+    console.log("file hash", hash);
+    const existing = await this.repo.count({ fileHash: hash });
+    if (existing > 0) {
+      throw new BadRequestException(`File with hash "${hash}" already exists`);
+    }
+
     // create job & enqueue
     const importOp = this.repo.create({
       fileName,
+      fileHash: hash,
       status: ImportStatus.PENDING,
       createdAt: new Date(),
     });

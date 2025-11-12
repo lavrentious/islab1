@@ -15,6 +15,9 @@ export class ImportOperation {
   @Property()
   fileName!: string; // file name in ./<TMP_DIR>/uploads
 
+  @Property({ nullable: true })
+  fileHash?: string;
+
   @Enum({ items: () => ImportStatus, type: "string" })
   status!: ImportStatus;
 

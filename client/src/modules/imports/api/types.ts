@@ -7,6 +7,7 @@ export enum ImportStatus {
 
 export class ImportOperation {
   id!: number;
+  fileHash?: string;
   fileName!: string; // file name in ./<TMP_DIR>/uploads
   status!: ImportStatus;
   entryCount?: number;
