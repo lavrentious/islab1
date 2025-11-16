@@ -22,6 +22,7 @@ import {
   ImportOperation,
   ImportStatus,
 } from "./entities/importoperation.entity";
+import { ImporterGateway } from "./importer.gateway";
 import {
   ImporterProcessorPayload,
   ImportWorkerPayload,
@@ -32,7 +33,10 @@ const MAX_RETRIES = 20;
 
 @Processor("import-queue")
 export class ImporterProcessor {
-  constructor(private readonly orm: MikroORM) {}
+  constructor(
+    private readonly orm: MikroORM,
+    private readonly gateway: ImporterGateway,
+  ) {}
 
   @Process({ name: "import-file", concurrency: 2 }) // concurrency: 13
   async importFile(job: Job<ImporterProcessorPayload>) {
@@ -46,6 +50,11 @@ export class ImporterProcessor {
     importOp.status = ImportStatus.IN_PROGRESS;
     importOp.startedAt = new Date();
     await em.persistAndFlush(importOp);
+    this.gateway.notifyStatusChange({
+      id: importOp.id,
+      status: importOp.status,
+      startedAt: importOp.startedAt.toISOString(),
+    });
 
     // parse
     console.log("processor: running worker...");
@@ -60,9 +69,14 @@ export class ImporterProcessor {
     // save
     importOp.entryCount = data.validItems.length;
     await em.persistAndFlush(importOp);
+    this.gateway.notifyStatusChange({
+      id: importOp.id,
+      entryCount: importOp.entryCount,
+    });
     if (!data.error && data.ok) {
       try {
         const res = await this.saveToDatabase(data.validItems);
+
         importOp.status = ImportStatus.SUCCESS;
         importOp.okCount = res.okCount;
         importOp.duplicateCount = res.duplicateCount;
@@ -84,6 +98,8 @@ export class ImporterProcessor {
       }
     } else {
       importOp.status = ImportStatus.FAILED;
+      importOp.finishedAt = new Date();
+
       if (data.validItems.length == 0) {
         importOp.errorMessage = "no valid items";
       } else if (data.msg) {
@@ -91,6 +107,15 @@ export class ImporterProcessor {
       }
       await em.persistAndFlush(importOp);
     }
+    this.gateway.notifyStatusChange({
+      id: importOp.id,
+      status: importOp.status,
+      startedAt: importOp.startedAt.toISOString(),
+      finishedAt: importOp.finishedAt.toISOString(),
+      okCount: importOp.okCount,
+      duplicateCount: importOp.duplicateCount,
+      errorMessage: importOp.errorMessage,
+    });
   }
 
   private runWorker(filePath: string) {

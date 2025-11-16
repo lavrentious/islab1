@@ -10,7 +10,6 @@ import React, { useMemo } from "react";
 import { Badge, Spinner, Table } from "react-bootstrap";
 import { FaArrowDown, FaArrowUp } from "react-icons/fa";
 import { useNavigate } from "react-router";
-import { useFindOneImportOpQuery } from "../api";
 import { ImportOperation, ImportStatus } from "../api/types";
 import { timeDiffToPreciseString } from "../utils";
 
@@ -140,31 +139,21 @@ const ImportOperationsTable: React.FC<Props> = ({
       <tbody>
         {table.getRowModel().rows.length > 0 ? (
           table.getRowModel().rows.map((row) => (
-            <RowWrapper
+            <tr
               key={row.original.id}
-              importOp={row.original}
-              navigate={navigate}
-              onRowSelect={onRowSelect}
-              renderRow={(op) => (
-                <tr
-                  onClick={() =>
-                    onRowSelect
-                      ? onRowSelect(op)
-                      : navigate(`/imports/${op.id}`)
-                  }
-                  style={{ cursor: "pointer" }}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, {
-                        ...cell.getContext(),
-                        row: { ...cell.row, original: op },
-                      })}
-                    </td>
-                  ))}
-                </tr>
-              )}
-            />
+              onClick={() =>
+                onRowSelect
+                  ? onRowSelect(row.original)
+                  : navigate(`/imports/${row.original.id}`)
+              }
+              style={{ cursor: "pointer" }}
+            >
+              {row.getVisibleCells().map((cell) => (
+                <td key={cell.id}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </td>
+              ))}
+            </tr>
           ))
         ) : (
           <tr>
@@ -180,24 +169,6 @@ const ImportOperationsTable: React.FC<Props> = ({
       </tbody>
     </Table>
   );
-};
-
-const RowWrapper: React.FC<{
-  importOp: ImportOperation;
-  navigate: ReturnType<typeof useNavigate>;
-  onRowSelect?: (item: ImportOperation) => void;
-  renderRow: (op: ImportOperation) => React.ReactNode;
-}> = ({ importOp, renderRow }) => {
-  const isInProgress =
-    importOp.status === ImportStatus.IN_PROGRESS ||
-    importOp.status === ImportStatus.PENDING;
-
-  const { data: latest } = useFindOneImportOpQuery(importOp.id, {
-    pollingInterval: isInProgress ? 1000 : 0,
-    skip: !isInProgress,
-  });
-
-  return <>{renderRow(latest ?? importOp)}</>;
 };
 
 export default ImportOperationsTable;

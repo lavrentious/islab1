@@ -13,8 +13,27 @@ export class ImportOperation {
   entryCount?: number;
   okCount?: number;
   duplicateCount?: number;
-  createdAt!: Date;
-  startedAt?: Date;
-  finishedAt?: Date;
+  createdAt!: string;
+  startedAt?: string;
+  finishedAt?: string;
   errorMessage?: string;
 }
+
+// sockets
+export interface ImportOpSocketPayload {
+  id: number;
+  status?: ImportStatus;
+  createdAt?: string; // ISO
+  startedAt?: string; // ISO
+  finishedAt?: string; // ISO
+  okCount?: number;
+  duplicateCount?: number;
+  entryCount?: number;
+  errorMessage?: string;
+}
+
+export interface ImporterServerToClientEvents {
+  importStatusChanged: (payload: ImportOpSocketPayload) => void;
+}
+
+// export interface ImporterClientToServerEvents {}
