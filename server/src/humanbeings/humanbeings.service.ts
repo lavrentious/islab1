@@ -25,6 +25,7 @@ import { GroupByCarDto } from "./dto/group-by-car.dto";
 import { HumanBeingDto } from "./dto/humanbeing.dto";
 import { UpdateHumanBeingDto } from "./dto/update-humanbeing.dto";
 import { HumanBeing, WeaponType } from "./entities/humanbeing.entity";
+import { retryTransaction } from "./utils";
 
 @Injectable()
 export class HumanBeingsService {
@@ -179,62 +180,68 @@ export class HumanBeingsService {
       throw new BadRequestException("Request body cannot be empty");
     }
 
-    const humanBeing = await this.em.transactional(
-      async (tx) => {
-        const entity = await tx.findOneOrFail(
-          HumanBeing,
-          { id },
-          {
-            failHandler: () =>
-              new NotFoundException(`Human being #${id} not found`),
-          },
-        );
-
-        if (dto.name && dto.name !== entity.name) {
-          const existing = await tx.findOne(HumanBeing, { name: dto.name });
-          if (existing && existing.id !== id) {
-            throw new BadRequestException(
-              `Human being with name "${dto.name}" already exists`,
-            );
-          }
-          // name changed => assume it's not in the same version set anymore
-          // rechain
-          await this._detachFromVersionChain(entity, tx);
-          entity._next_version = null;
-          entity._version_root = null;
-          entity._version = 0;
-          tx.persist(entity);
-        }
-
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { car: _, ...rest } = dto;
-        const data: Partial<Loaded<HumanBeing>> = { ...rest };
-
-        if (dto.car !== undefined) {
-          if (!dto.car) {
-            data.car = null;
-          } else if (typeof dto.car === "number") {
-            data.car = await tx.findOneOrFail(
-              Car,
-              { id: dto.car },
+    const humanBeing = await retryTransaction(
+      async () => {
+        return await this.em.transactional(
+          async (tx) => {
+            const entity = await tx.findOneOrFail(
+              HumanBeing,
+              { id },
               {
                 failHandler: () =>
-                  new BadRequestException(
-                    `Car #${dto.car as number} not found`,
-                  ),
+                  new NotFoundException(`Human being #${id} not found`),
               },
             );
-          } else {
-            data.car = await this.carsService.create(dto.car);
-          }
-        }
 
-        tx.assign(entity, data);
-        await tx.flush();
+            if (dto.name && dto.name !== entity.name) {
+              const existing = await tx.findOne(HumanBeing, { name: dto.name });
+              if (existing && existing.id !== id) {
+                throw new BadRequestException(
+                  `Human being with name "${dto.name}" already exists`,
+                );
+              }
+              // name changed => assume it's not in the same version set anymore
+              // rechain
+              await this._detachFromVersionChain(entity, tx);
+              entity._next_version = null;
+              entity._version_root = null;
+              entity._version = 0;
+              tx.persist(entity);
+            }
 
-        return entity;
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { car: _, ...rest } = dto;
+            const data: Partial<Loaded<HumanBeing>> = { ...rest };
+
+            if (dto.car !== undefined) {
+              if (!dto.car) {
+                data.car = null;
+              } else if (typeof dto.car === "number") {
+                data.car = await tx.findOneOrFail(
+                  Car,
+                  { id: dto.car },
+                  {
+                    failHandler: () =>
+                      new BadRequestException(
+                        `Car #${dto.car as number} not found`,
+                      ),
+                  },
+                );
+              } else {
+                data.car = await this.carsService.create(dto.car);
+              }
+            }
+
+            tx.assign(entity, data);
+            await tx.flush();
+
+            return entity;
+          },
+          { isolationLevel: IsolationLevel.SERIALIZABLE },
+        );
       },
-      { isolationLevel: IsolationLevel.SERIALIZABLE },
+      10,
+      1000,
     );
 
     if (humanBeing) {
@@ -303,7 +310,6 @@ export class HumanBeingsService {
     }
 
     // if root then rechain
-    console.log(humanBeing);
     if (!humanBeing._version_root && nextVersion) {
       console.log("root");
       nextVersion._version_root = null;
