@@ -17,6 +17,7 @@ import { CreateCarDto } from "src/cars/dto/create-car.dto";
 import { Car } from "src/cars/entities/car.entity";
 import { CreateHumanBeingDto } from "src/humanbeings/dto/create-humanbeing.dto";
 import { HumanBeing } from "src/humanbeings/entities/humanbeing.entity";
+import { retryTransaction } from "src/humanbeings/utils";
 import { Worker } from "worker_threads";
 import {
   ImportOperation,
@@ -28,8 +29,6 @@ import {
   ImportWorkerPayload,
   ImportWorkerResult,
 } from "./types";
-
-const MAX_RETRIES = 20;
 
 @Processor("import-queue")
 export class ImporterProcessor {
@@ -144,8 +143,6 @@ export class ImporterProcessor {
     okCount: number;
     duplicateCount: number;
   }> {
-    let retries = 0;
-
     const uniqueCarIds = Array.from(
       new Set(
         parsedObjects
@@ -165,115 +162,103 @@ export class ImporterProcessor {
 
     const humanNames = new Set<string>(parsedObjects.map((dto) => dto.name));
 
-    while (retries < MAX_RETRIES) {
-      try {
-        const em = this.orm.em.fork();
+    const em = this.orm.em.fork();
 
-        let okCount = 0;
-        let duplicateCount = 0;
-        const res = await em.transactional(
-          async (tx) => {
-            //check car ids
-            const invalidCars = await this._getInvalidCarIds(uniqueCarIds, tx);
-            if (invalidCars.length > 0) {
-              throw new BadRequestException(
-                `Invalid cars: ${invalidCars.join(", ")}`,
-              );
-            }
+    return retryTransaction(() =>
+      em.transactional(
+        async (tx) => {
+          let okCount = 0;
+          let duplicateCount = 0;
 
-            // check car dtos
-            console.log("unique cars:", carDtoMap);
-            const takenCarNames = await this._getTakenCarNames(
-              Array.from(carDtoMap.values()),
-              tx,
+          //check car ids
+          const invalidCars = await this._getInvalidCarIds(uniqueCarIds, tx);
+          if (invalidCars.length > 0) {
+            throw new BadRequestException(
+              `Invalid cars: ${invalidCars.join(", ")}`,
             );
-            if (takenCarNames.length > 0) {
-              throw new BadRequestException(
-                `Car name must be unique - unavailable car names: ${takenCarNames.map((name) => `"${name}"`).join(", ")}`,
-              );
-            }
+          }
 
-            // create cars as dtos
-            const carMap = new Map<string, Car>(); // hash dto -> car entity
-            for (const [hash, dto] of carDtoMap.entries()) {
-              const car = tx.create(Car, dto as Omit<Car, "id">);
-              carMap.set(hash, car);
-            }
-
-            const fromDB: HumanBeing[] = humanNames.size
-              ? await tx.find(HumanBeing, {
-                  name: { $in: [...humanNames] },
-                  _next_version: null,
-                })
-              : [];
-            const hbMap = new Map<string, HumanBeing>(
-              fromDB.map((human) => [human.name, human]),
+          // check car dtos
+          console.log("unique cars:", carDtoMap);
+          const takenCarNames = await this._getTakenCarNames(
+            Array.from(carDtoMap.values()),
+            tx,
+          );
+          if (takenCarNames.length > 0) {
+            throw new BadRequestException(
+              `Car name must be unique - unavailable car names: ${takenCarNames.map((name) => `"${name}"`).join(", ")}`,
             );
-            const toPersist: HumanBeing[] = [];
+          }
 
-            console.log("importing into db...");
-            for (const dto of parsedObjects) {
-              // find duplicates
-              const existing = hbMap.get(dto.name);
+          // create cars as dtos
+          const carMap = new Map<string, Car>(); // hash dto -> car entity
+          for (const [hash, dto] of carDtoMap.entries()) {
+            const car = tx.create(Car, dto as Omit<Car, "id">);
+            carMap.set(hash, car);
+          }
 
-              let car: Car | undefined;
-              if (dto.car && typeof dto.car === "object") {
-                const hash = this._hashCar(dto.car);
-                car = carMap.get(hash);
-              }
+          const fromDB: HumanBeing[] = humanNames.size
+            ? await tx.find(HumanBeing, {
+                name: { $in: [...humanNames] },
+                _next_version: null,
+              })
+            : [];
+          const hbMap = new Map<string, HumanBeing>(
+            fromDB.map((human) => [human.name, human]),
+          );
+          const toPersist: HumanBeing[] = [];
 
-              if (existing) {
-                // duplicates found
-                const humanBeing = tx.create(HumanBeing, {
-                  ...dto,
-                  car,
-                  _version: existing._version + 1,
-                  _version_root: existing._version_root
-                    ? existing._version_root
-                    : existing,
-                  creationDate: new Date(),
-                });
-                existing._next_version = humanBeing;
-                hbMap.set(dto.name, humanBeing);
-                toPersist.push(humanBeing);
-                toPersist.push(existing);
+          console.log("importing into db...");
+          for (const dto of parsedObjects) {
+            // find duplicates
+            const existing = hbMap.get(dto.name);
 
-                duplicateCount++;
-              } else {
-                const humanBeing = tx.create(HumanBeing, {
-                  ...dto,
-                  car,
-                  _version: 0,
-                  creationDate: new Date(),
-                });
-                hbMap.set(dto.name, humanBeing);
-                toPersist.push(humanBeing);
-                okCount++;
-              }
+            let car: Car | undefined;
+            if (dto.car && typeof dto.car === "object") {
+              const hash = this._hashCar(dto.car);
+              car = carMap.get(hash);
             }
-            tx.persist(toPersist);
-            tx.persist(carMap.values());
-            await tx.flush();
 
-            console.log(
-              `--- db import result: ${okCount} created, ${duplicateCount} duplicates`,
-            );
-            return { okCount, duplicateCount };
-          },
-          { isolationLevel: IsolationLevel.SERIALIZABLE },
-        );
-        return res;
-      } catch (e) {
-        if ("code" in e && (e as DriverException).code === "40001") {
-          console.log(`retrying (${retries + 1}/${MAX_RETRIES})...`);
-          retries++;
-          continue;
-        }
-        throw e;
-      }
-    }
-    throw new InternalServerErrorException(
-      `Failed to import ${parsedObjects.length} items after ${MAX_RETRIES} retries`,
+            if (existing) {
+              // duplicates found
+              const humanBeing = tx.create(HumanBeing, {
+                ...dto,
+                car,
+                _version: existing._version + 1,
+                _version_root: existing._version_root
+                  ? existing._version_root
+                  : existing,
+                creationDate: new Date(),
+              });
+              existing._next_version = humanBeing;
+              hbMap.set(dto.name, humanBeing);
+              toPersist.push(humanBeing);
+              toPersist.push(existing);
+
+              duplicateCount++;
+            } else {
+              const humanBeing = tx.create(HumanBeing, {
+                ...dto,
+                car,
+                _version: 0,
+                creationDate: new Date(),
+              });
+              hbMap.set(dto.name, humanBeing);
+              toPersist.push(humanBeing);
+              okCount++;
+            }
+          }
+          tx.persist(toPersist);
+          tx.persist(carMap.values());
+          await tx.flush();
+
+          console.log(
+            `--- db import result: ${okCount} created, ${duplicateCount} duplicates`,
+          );
+          return { okCount, duplicateCount };
+        },
+        { isolationLevel: IsolationLevel.SERIALIZABLE },
+      ),
     );
   }
 
