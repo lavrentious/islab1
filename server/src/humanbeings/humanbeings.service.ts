@@ -41,46 +41,48 @@ export class HumanBeingsService {
   async create(dto: CreateHumanBeingDto): Promise<HumanBeingDto> {
     let car: Car | null = null;
 
-    const humanBeing = await this.em.transactional(
-      async (tx) => {
-        if (dto.car) {
-          if (typeof dto.car === "number") {
-            car = await tx.findOneOrFail(
-              Car,
-              { id: dto.car },
-              {
-                failHandler: () =>
-                  new BadRequestException(
-                    `Car #${dto.car as number} not found`,
-                  ),
-              },
-            );
-          } else {
-            car = await this.carsService.create(dto.car);
-          }
-        }
+    const humanBeing = await retryTransaction(
+      async () =>
+        this.em.transactional(
+          async (tx) => {
+            if (dto.car) {
+              if (typeof dto.car === "number") {
+                car = await tx.findOneOrFail(
+                  Car,
+                  { id: dto.car },
+                  {
+                    failHandler: () =>
+                      new BadRequestException(
+                        `Car #${dto.car as number} not found`,
+                      ),
+                  },
+                );
+              } else {
+                car = await this.carsService.create(dto.car);
+              }
+            }
 
-        const existing = await tx.findOne(HumanBeing, { name: dto.name });
-        if (existing) {
-          throw new BadRequestException(
-            `Human being with name "${dto.name}" already exists`,
-          );
-        }
+            const existing = await tx.findOne(HumanBeing, { name: dto.name });
+            if (existing) {
+              throw new BadRequestException(
+                `Human being with name "${dto.name}" already exists`,
+              );
+            }
 
-        const humanBeing = tx.create(HumanBeing, { ...dto, car } as Omit<
-          HumanBeing,
-          "id"
-        >);
-        await tx.persistAndFlush(humanBeing);
-        return humanBeing;
-      },
-      { isolationLevel: IsolationLevel.SERIALIZABLE },
+            const humanBeing = tx.create(HumanBeing, { ...dto, car } as Omit<
+              HumanBeing,
+              "id"
+            >);
+            await tx.persistAndFlush(humanBeing);
+            return humanBeing;
+          },
+          { isolationLevel: IsolationLevel.SERIALIZABLE },
+        ),
+      10,
+      1000,
     );
 
-    if (humanBeing) {
-      return new HumanBeingDto(humanBeing);
-    }
-    throw new InternalServerErrorException();
+    return new HumanBeingDto(humanBeing);
   }
 
   async findAll(
@@ -181,8 +183,8 @@ export class HumanBeingsService {
     }
 
     const humanBeing = await retryTransaction(
-      async () => {
-        return await this.em.transactional(
+      async () =>
+        this.em.transactional(
           async (tx) => {
             const entity = await tx.findOneOrFail(
               HumanBeing,
@@ -238,8 +240,7 @@ export class HumanBeingsService {
             return entity;
           },
           { isolationLevel: IsolationLevel.SERIALIZABLE },
-        );
-      },
+        ),
       10,
       1000,
     );
