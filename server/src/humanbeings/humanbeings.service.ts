@@ -230,14 +230,16 @@ export class HumanBeingsService {
   }
 
   async remove(id: number): Promise<void> {
-    return this.em.transactional(
-      async (tx) => {
-        const humanBeing = await this._findOneOrFail(id, tx);
-        await this._detachFromVersionChain(humanBeing, tx);
-        tx.remove(humanBeing);
-        await tx.flush();
-      },
-      { isolationLevel: IsolationLevel.SERIALIZABLE },
+    return retryTransaction(() =>
+      this.em.transactional(
+        async (tx) => {
+          const humanBeing = await this._findOneOrFail(id, tx);
+          await this._detachFromVersionChain(humanBeing, tx);
+          tx.remove(humanBeing);
+          await tx.flush();
+        },
+        { isolationLevel: IsolationLevel.REPEATABLE_READ },
+      ),
     );
   }
 
