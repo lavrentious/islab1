@@ -9,7 +9,6 @@ import {
 import {
   BadRequestException,
   Injectable,
-  InternalServerErrorException,
   NotFoundException,
 } from "@nestjs/common";
 import { CarsService } from "src/cars/cars.service";
@@ -36,50 +35,37 @@ export class HumanBeingsService {
     private readonly carsService: CarsService,
   ) {}
 
-  // CRUD
+  // --- CRUD ---
 
   async create(dto: CreateHumanBeingDto): Promise<HumanBeingDto> {
-    let car: Car | null = null;
+    const humanBeing = await retryTransaction(async () =>
+      this.em.transactional(
+        async (tx) => {
+          let car: Car | null = null;
 
-    const humanBeing = await retryTransaction(
-      async () =>
-        this.em.transactional(
-          async (tx) => {
-            if (dto.car) {
-              if (typeof dto.car === "number") {
-                car = await tx.findOneOrFail(
-                  Car,
-                  { id: dto.car },
-                  {
-                    failHandler: () =>
-                      new BadRequestException(
-                        `Car #${dto.car as number} not found`,
-                      ),
-                  },
-                );
-              } else {
-                car = await this.carsService.create(dto.car);
-              }
-            }
+          if (dto.car) {
+            car =
+              typeof dto.car === "number"
+                ? await this.carsService._findOneOrFail(dto.car, tx)
+                : await this.carsService._create(dto.car, tx);
+          }
 
-            const existing = await tx.findOne(HumanBeing, { name: dto.name });
-            if (existing) {
-              throw new BadRequestException(
-                `Human being with name "${dto.name}" already exists`,
-              );
-            }
+          const existing = await tx.count(HumanBeing, { name: dto.name });
+          if (existing > 0) {
+            throw new BadRequestException(
+              `Human being with name "${dto.name}" already exists`,
+            );
+          }
 
-            const humanBeing = tx.create(HumanBeing, { ...dto, car } as Omit<
-              HumanBeing,
-              "id"
-            >);
-            await tx.persistAndFlush(humanBeing);
-            return humanBeing;
-          },
-          { isolationLevel: IsolationLevel.SERIALIZABLE },
-        ),
-      10,
-      1000,
+          const entity = tx.create(HumanBeing, { ...dto, car } as Omit<
+            HumanBeing,
+            "id"
+          >);
+          await tx.persistAndFlush(entity);
+          return entity;
+        },
+        { isolationLevel: IsolationLevel.SERIALIZABLE },
+      ),
     );
 
     return new HumanBeingDto(humanBeing);
@@ -90,36 +76,28 @@ export class HumanBeingsService {
   ): Promise<PaginateResponse<HumanBeingDto>> {
     const paginateQuery = paginateParamsToQuery<HumanBeing>(params);
 
-    // filtering
     const where: FilterQuery<HumanBeing> = {};
-    if (params.realHero !== undefined) {
-      where.realHero = params.realHero;
-    }
-    if (params.hasToothpick !== undefined) {
+
+    if (params.realHero !== undefined) where.realHero = params.realHero;
+    if (params.hasToothpick !== undefined)
       where.hasToothpick = params.hasToothpick;
-    }
-    if (params.mood !== undefined) {
-      where.mood = params.mood;
-    }
-    if (params.weaponType !== undefined) {
-      where.weaponType = params.weaponType;
-    }
-    if (params.name !== undefined) {
-      where.name = { $ilike: `%${params.name}%` };
-    }
-    if (params.soundtrackName !== undefined) {
+    if (params.mood !== undefined) where.mood = params.mood;
+    if (params.weaponType !== undefined) where.weaponType = params.weaponType;
+    if (params.name !== undefined) where.name = { $ilike: `%${params.name}%` };
+    if (params.soundtrackName !== undefined)
       where.soundtrackName = { $ilike: `%${params.soundtrackName}%` };
-    }
+
     if (params.hasCar !== undefined) {
-      if (params.hasCar) {
-        where.car = { $ne: null };
-      } else {
-        where.car = null;
-      }
+      where.car = params.hasCar ? { $ne: null } : null;
     }
+
     if (params.hasCar !== false && params.carName !== undefined) {
-      where.car = { name: { $ilike: `%${params.carName}%` } };
+      where.car = {
+        ...(where.car as Partial<Car>),
+        name: { $ilike: `%${params.carName}%` },
+      };
     }
+
     if (params.hasCar !== false && params.carCool !== undefined) {
       where.car = { ...(where.car as Partial<Car>), cool: params.carCool };
     }
@@ -128,30 +106,24 @@ export class HumanBeingsService {
       where._next_version = null;
     }
 
-    // sorting
     const orderBy: Record<string, "ASC" | "DESC"> = {};
     if (params.sortBy) orderBy[params.sortBy] = params.sortOrder || "ASC";
 
-    // query
-    let items: HumanBeing[];
-    if (params.paginate && params.page && params.limit && paginateQuery) {
-      items = await this.repo.findAll({
-        ...paginateQuery,
-        where,
-        orderBy,
-        populate: ["car"],
-      });
-    } else {
-      items = await this.repo.findAll({ where, orderBy });
-    }
+    const items: HumanBeing[] =
+      params.paginate && params.page && params.limit && paginateQuery
+        ? await this.repo.findAll({
+            ...paginateQuery,
+            where,
+            orderBy,
+            populate: ["car"],
+          })
+        : await this.repo.findAll({ where, orderBy });
 
-    // pagination
     const totalItems = await this.repo.count(where);
     const limit = params.limit ?? totalItems;
     const page = params.page ?? 1;
     const totalPages = calculateTotalPages(totalItems, limit);
 
-    // res
     return {
       items: items.map((item) => new HumanBeingDto(item)),
       limit,
@@ -166,103 +138,82 @@ export class HumanBeingsService {
     return entity ? new HumanBeingDto(entity) : null;
   }
 
-  async findOneOrFail(id: number): Promise<HumanBeingDto> {
-    const entity = await this.repo.findOneOrFail(
+  async _findOneOrFail(
+    id: number,
+    em: EntityManager = this.em,
+  ): Promise<HumanBeing> {
+    return em.findOneOrFail(
+      HumanBeing,
       { id },
       {
         failHandler: () =>
           new NotFoundException(`Human being #${id} not found`),
       },
     );
+  }
+
+  async findOneOrFail(id: number): Promise<HumanBeingDto> {
+    const entity = await this._findOneOrFail(id);
     return new HumanBeingDto(entity);
   }
 
   async update(id: number, dto: UpdateHumanBeingDto): Promise<HumanBeingDto> {
-    if (!dto || Object.keys(dto).length === 0) {
+    if (!dto || Object.keys(dto).length === 0)
       throw new BadRequestException("Request body cannot be empty");
-    }
 
-    const humanBeing = await retryTransaction(
-      async () =>
-        this.em.transactional(
-          async (tx) => {
-            const entity = await tx.findOneOrFail(
-              HumanBeing,
-              { id },
-              {
-                failHandler: () =>
-                  new NotFoundException(`Human being #${id} not found`),
-              },
-            );
+    const humanBeing = await retryTransaction(async () =>
+      this.em.transactional(
+        async (tx) => {
+          const entity = await this._findOneOrFail(id, tx);
 
-            if (dto.name && dto.name !== entity.name) {
-              const existing = await tx.findOne(HumanBeing, { name: dto.name });
-              if (existing && existing.id !== id) {
-                throw new BadRequestException(
-                  `Human being with name "${dto.name}" already exists`,
-                );
-              }
-              // name changed => assume it's not in the same version set anymore
-              // rechain
-              await this._detachFromVersionChain(entity, tx);
-              entity._next_version = null;
-              entity._version_root = null;
-              entity._version = 0;
-              tx.persist(entity);
+          if (dto.name && dto.name !== entity.name) {
+            const existing = await tx.findOne(HumanBeing, { name: dto.name });
+            if (existing && existing.id !== id) {
+              throw new BadRequestException(
+                `Human being with name "${dto.name}" already exists`,
+              );
             }
 
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { car: _, ...rest } = dto;
-            const data: Partial<Loaded<HumanBeing>> = { ...rest };
+            await this._detachFromVersionChain(entity, tx);
+            entity._next_version = null;
+            entity._version_root = null;
+            entity._version = 0;
+            tx.persist(entity);
+          }
 
-            if (dto.car !== undefined) {
-              if (!dto.car) {
-                data.car = null;
-              } else if (typeof dto.car === "number") {
-                data.car = await tx.findOneOrFail(
-                  Car,
-                  { id: dto.car },
-                  {
-                    failHandler: () =>
-                      new BadRequestException(
-                        `Car #${dto.car as number} not found`,
-                      ),
-                  },
-                );
-              } else {
-                data.car = await this.carsService.create(dto.car);
-              }
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { car: _, ...rest } = dto;
+          const data: Partial<Loaded<HumanBeing>> = { ...rest };
+
+          if (dto.car !== undefined) {
+            if (!dto.car) data.car = null;
+            else if (typeof dto.car === "number") {
+              data.car = await this.carsService._findOneOrFail(dto.car, tx);
+            } else {
+              data.car = await this.carsService._create(dto.car, tx);
             }
+          }
 
-            tx.assign(entity, data);
-            await tx.flush();
-
-            return entity;
-          },
-          { isolationLevel: IsolationLevel.SERIALIZABLE },
-        ),
-      10,
-      1000,
+          tx.assign(entity, data);
+          await tx.flush();
+          return entity;
+        },
+        { isolationLevel: IsolationLevel.SERIALIZABLE },
+      ),
     );
 
-    if (humanBeing) {
-      return new HumanBeingDto(humanBeing);
-    }
-
-    throw new InternalServerErrorException();
+    return new HumanBeingDto(humanBeing);
   }
 
   async exists(id: number): Promise<boolean> {
-    return (await this.repo.count({ id })) == 1;
+    return (await this.repo.count({ id })) === 1;
   }
 
   async findVersions(id: number): Promise<HumanBeingDto[]> {
     const humanBeing = await this.findOneOrFail(id);
     const rootId = humanBeing._version_root ?? id;
     const versions = await this.repo.find(
-      {
-        $or: [{ id: rootId }, { _version_root: rootId }],
-      },
+      { $or: [{ id: rootId }, { _version_root: rootId }] },
       { orderBy: { _version: "asc" }, populate: false },
     );
     return versions.map((item) => new HumanBeingDto(item));
@@ -271,48 +222,29 @@ export class HumanBeingsService {
   async remove(id: number): Promise<void> {
     return this.em.transactional(
       async (tx) => {
-        const humanBeing = await tx.findOneOrFail(
-          HumanBeing,
-          { id },
-          {
-            failHandler: () =>
-              new NotFoundException(`Human being #${id} not found`),
-          },
-        );
-
-        // rechain version linked list
+        const humanBeing = await this._findOneOrFail(id, tx);
         await this._detachFromVersionChain(humanBeing, tx);
-
-        // delete entity
         tx.remove(humanBeing);
-
         await tx.flush();
       },
       { isolationLevel: IsolationLevel.SERIALIZABLE },
     );
   }
 
-  /**
-   * fix linked list by rechaining after deleting the given node
-   * doesn't flush, so do `await em.flush()` after usage!
-   * @param humanBeing
-   * @param em
-   */
+  // --- Helpers ---
+
   async _detachFromVersionChain(humanBeing: HumanBeing, em: EntityManager) {
     const prevVersion = await em.findOne(HumanBeing, {
       _next_version: humanBeing,
     });
     const nextVersion = humanBeing._next_version;
 
-    // link prev and next
     if (prevVersion) {
       prevVersion._next_version = nextVersion ?? null;
       em.persist(prevVersion);
     }
 
-    // if root then rechain
     if (!humanBeing._version_root && nextVersion) {
-      console.log("root");
       nextVersion._version_root = null;
       em.persist(nextVersion);
 
@@ -320,14 +252,13 @@ export class HumanBeingsService {
         _version_root: humanBeing,
       });
       for (const d of descendants) {
-        console.log("setting version root to ", nextVersion.id, "for ", d.id);
         d._version_root = nextVersion;
       }
       em.persist(descendants);
     }
   }
 
-  // special functions
+  // --- Special functions ---
 
   async groupByCar() {
     const result = await this.em
@@ -358,11 +289,7 @@ export class HumanBeingsService {
   }
 
   async assignCarToCarless(id: number): Promise<number> {
-    const car = await this.carsService.findOne(id);
-    if (!car) {
-      throw new NotFoundException(`Car #${id} not found`);
-    }
-
+    await this.carsService.throwIfNotExists(id);
     const [{ assign_car_to_carless }] = await this.em.execute(
       `SELECT assign_car_to_carless(?)`,
       [id],

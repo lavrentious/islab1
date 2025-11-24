@@ -3,6 +3,7 @@ import {
   EntityManager,
   EntityRepository,
   FilterQuery,
+  IsolationLevel,
 } from "@mikro-orm/postgresql";
 import {
   BadRequestException,
@@ -14,6 +15,7 @@ import {
   calculateTotalPages,
   paginateParamsToQuery,
 } from "src/common/utils/pagination.utils";
+import { retryTransaction } from "src/humanbeings/utils";
 import { CarDto } from "./dto/car.dto";
 import { CreateCarDto } from "./dto/create-car.dto";
 import { FindAllCarsQueryParamsDto } from "./dto/find-all-cars-query-params.dto";
@@ -28,56 +30,69 @@ export class CarsService {
     private readonly repo: EntityRepository<Car>,
   ) {}
 
-  async create(dto: CreateCarDto) {
-    const existing = await this.repo.count({ name: dto.name });
-    if (existing > 0) {
-      throw new BadRequestException(
-        `Car with name "${dto.name}" already exists`,
-      );
-    }
-
-    const car = this.repo.create(dto as Omit<Car, "id">);
-    await this.em.flush();
+  // --- Internal methods (with optional em) ---
+  async _create(dto: CreateCarDto, em: EntityManager = this.em): Promise<Car> {
+    const car = await retryTransaction(async () =>
+      em.transactional(
+        async (tx) => {
+          const existing = await tx.count(Car, { name: dto.name });
+          if (existing > 0) {
+            throw new BadRequestException(
+              `Car with name "${dto.name}" already exists`,
+            );
+          }
+          const car = tx.create(Car, dto as Omit<Car, "id">);
+          await tx.persistAndFlush(car);
+          return car;
+        },
+        { isolationLevel: IsolationLevel.SERIALIZABLE },
+      ),
+    );
     return car;
+  }
+
+  async _findOne(id: number, em: EntityManager = this.em): Promise<Car | null> {
+    return em.findOne(Car, { id });
+  }
+
+  async _findOneOrFail(id: number, em: EntityManager = this.em): Promise<Car> {
+    const car = await em.findOneOrFail(
+      Car,
+      { id },
+      {
+        failHandler: () => new NotFoundException(`Car #${id} not found`),
+      },
+    );
+    return car;
+  }
+
+  // --- Public methods (no em argument, return DTOs) ---
+  async create(dto: CreateCarDto): Promise<CarDto> {
+    const car = await this._create(dto);
+    return new CarDto(car);
   }
 
   async findAll(
     params: FindAllCarsQueryParamsDto,
   ): Promise<PaginateResponse<CarDto>> {
     const paginateQuery = paginateParamsToQuery<Car>(params);
-
-    //filtering
     const where: FilterQuery<Car> = {};
-    if (params.name !== undefined) {
-      where.name = { $ilike: `%${params.name}%` };
-    }
-    if (params.cool !== undefined) {
-      where.cool = params.cool;
-    }
+    if (params.name !== undefined) where.name = { $ilike: `%${params.name}%` };
+    if (params.cool !== undefined) where.cool = params.cool;
 
-    // sorting
     const orderBy: Record<string, "ASC" | "DESC"> = {};
     if (params.sortBy) orderBy[params.sortBy] = params.sortOrder || "ASC";
 
-    // query
-    let items: Car[];
-    if (params.paginate && params.page && params.limit && paginateQuery) {
-      items = await this.repo.findAll({
-        ...paginateQuery,
-        where,
-        orderBy,
-      });
-    } else {
-      items = await this.repo.findAll({ where, orderBy });
-    }
+    const items: Car[] =
+      params.paginate && params.page && params.limit && paginateQuery
+        ? await this.repo.findAll({ ...paginateQuery, where, orderBy })
+        : await this.repo.findAll({ where, orderBy });
 
-    // pagination
     const totalItems = await this.repo.count(where);
     const limit = params.limit ?? totalItems;
     const page = params.page ?? 1;
     const totalPages = calculateTotalPages(totalItems, limit);
 
-    // res
     return {
       items: items.map((item) => new CarDto(item)),
       limit,
@@ -87,48 +102,63 @@ export class CarsService {
     };
   }
 
-  findOne(id: number) {
-    return this.repo.findOneOrFail(
-      { id },
-      {
-        failHandler: () => new NotFoundException(`Car #${id} not found`),
-      },
-    );
+  async findOne(id: number): Promise<CarDto | null> {
+    const car = await this._findOne(id);
+    return car ? new CarDto(car) : null;
   }
 
-  findOneByName(name: string) {
-    return this.repo.findOne({ name });
+  async exists(id: number): Promise<boolean> {
+    const count = await this.em.count(Car, { id });
+    return count > 0;
   }
 
-  async update(id: number, dto: UpdateCarDto) {
+  async throwIfNotExists(id: number): Promise<void> {
+    const exists = await this.exists(id);
+    if (!exists) throw new NotFoundException(`Car #${id} not found`);
+  }
+
+  async findOneOrFail(id: number): Promise<CarDto> {
+    const car = await this._findOneOrFail(id);
+    return new CarDto(car);
+  }
+
+  async findOneByName(name: string): Promise<CarDto | null> {
+    const result = await this.em.findOne(Car, { name });
+    return result ? new CarDto(result) : null;
+  }
+
+  async update(id: number, dto: UpdateCarDto): Promise<CarDto> {
     if (!dto || Object.keys(dto).length === 0) {
       throw new BadRequestException("Request body cannot be empty");
     }
-
-    const entity = await this.repo.findOneOrFail(
-      { id },
-      {
-        failHandler: () => new NotFoundException(`Car #${id} not found`),
-      },
+    const car = await retryTransaction(async () =>
+      this.em.transactional(
+        async (tx) => {
+          const entity = await this._findOneOrFail(id, tx);
+          tx.assign(entity, dto);
+          await tx.persistAndFlush(entity);
+          return entity;
+        },
+        { isolationLevel: IsolationLevel.SERIALIZABLE },
+      ),
     );
-    this.repo.assign(entity, dto);
-    await this.em.flush();
-    return entity;
+    return new CarDto(car);
   }
 
   async remove(id: number) {
-    const car = await this.repo.findOneOrFail(
-      { id },
-      {
-        populate: ["owners"],
-        failHandler: () => new NotFoundException(`Car #${id} not found`),
-      },
+    await retryTransaction(async () =>
+      this.em.transactional(
+        async (tx) => {
+          const car = await this._findOneOrFail(id, tx);
+          if (car.owners.length) {
+            throw new BadRequestException(
+              `Car #${id} has ${car.owners.length} owners and cannot be deleted`,
+            );
+          }
+          await tx.nativeDelete(Car, { id });
+        },
+        { isolationLevel: IsolationLevel.SERIALIZABLE },
+      ),
     );
-    if (car.owners.length) {
-      throw new BadRequestException(
-        `Car #${id} has ${car.owners.length} owners and cannot be deleted`,
-      );
-    }
-    await this.repo.nativeDelete({ id });
   }
 }

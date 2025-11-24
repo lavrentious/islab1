@@ -29,7 +29,7 @@ export class CarsController {
 
   @Get(":id")
   findOne(@Param("id") id: string) {
-    return this.carsService.findOne(+id);
+    return this.carsService.findOneOrFail(+id);
   }
 
   @Patch(":id")
