@@ -1,0 +1,152 @@
+[
+  {
+    "name": "Human_0",
+    "coordinates": {
+      "x": 631.162,
+      "y": 334
+    },
+    "realHero": true,
+    "hasToothpick": true,
+    "car": 3,
+    "mood": "APATHY",
+    "impactSpeed": 24,
+    "soundtrackName": "i am new",
+    "minutesOfWaiting": 51,
+    "weaponType": "SHOTGUN"
+  },
+  {
+    "name": "Human_11",
+    "coordinates": {
+      "x": -366.279,
+      "y": 636
+    },
+    "realHero": false,
+    "hasToothpick": false,
+    "car": 1,
+    "mood": "SADNESS",
+    "impactSpeed": 209,
+    "soundtrackName": "Track_98",
+    "minutesOfWaiting": null,
+    "weaponType": "SHOTGUN"
+  },
+  {
+    "name": "Human_12",
+    "coordinates": {
+      "x": -566.62,
+      "y": -590
+    },
+    "realHero": true,
+    "hasToothpick": true,
+    "car": 3,
+    "mood": "CALM",
+    "impactSpeed": 148,
+    "soundtrackName": "Track_16",
+    "minutesOfWaiting": null,
+    "weaponType": "RIFLE"
+  },
+  {
+    "name": "Human_13",
+    "coordinates": {
+      "x": 778.812,
+      "y": -368
+    },
+    "realHero": true,
+    "hasToothpick": true,
+    "car": 2,
+    "mood": "SADNESS",
+    "impactSpeed": 299,
+    "soundtrackName": "Track_49",
+    "minutesOfWaiting": null,
+    "weaponType": "RIFLE"
+  },
+  {
+    "name": "Human_0",
+    "coordinates": {
+      "x": 650.41,
+      "y": 230
+    },
+    "realHero": true,
+    "hasToothpick": null,
+    "car": 1,
+    "mood": "SORROW",
+    "impactSpeed": 148,
+    "soundtrackName": "i am newer",
+    "minutesOfWaiting": 110,
+    "weaponType": "HAMMER"
+  },
+  {
+    "name": "Human_15",
+    "coordinates": {
+      "x": -319.213,
+      "y": 414
+    },
+    "realHero": true,
+    "hasToothpick": true,
+    "car": 4,
+    "mood": "SADNESS",
+    "impactSpeed": 139,
+    "soundtrackName": "Track_92",
+    "minutesOfWaiting": null,
+    "weaponType": "SHOTGUN"
+  },
+  {
+    "name": "Human_16",
+    "coordinates": {
+      "x": -781.515,
+      "y": 933
+    },
+    "realHero": false,
+    "hasToothpick": true,
+    "car": 2,
+    "mood": "APATHY",
+    "impactSpeed": 139,
+    "soundtrackName": "Track_62",
+    "minutesOfWaiting": null,
+    "weaponType": "HAMMER"
+  },
+  {
+    "name": "Human_17",
+    "coordinates": {
+      "x": 121.46,
+      "y": -450
+    },
+    "realHero": true,
+    "hasToothpick": null,
+    "car": 2,
+    "mood": "CALM",
+    "impactSpeed": 53,
+    "soundtrackName": "Track_28",
+    "minutesOfWaiting": 120,
+    "weaponType": "SHOTGUN"
+  },
+  {
+    "name": "Human_18",
+    "coordinates": {
+      "x": 165.431,
+      "y": 563
+    },
+    "realHero": false,
+    "hasToothpick": false,
+    "car": 4,
+    "mood": "SORROW",
+    "impactSpeed": 247,
+    "soundtrackName": "Track_71",
+    "minutesOfWaiting": 60,
+    "weaponType": "SHOTGUN"
+  },
+  {
+    "name": "Human_19",
+    "coordinates": {
+      "x": 491.867,
+      "y": -222
+    },
+    "realHero": true,
+    "hasToothpick": false,
+    "car": 1,
+    "mood": "APATHY",
+    "impactSpeed": 242,
+    "soundtrackName": "Track_72",
+    "minutesOfWaiting": null,
+    "weaponType": "SHOTGUN"
+  }
+]
