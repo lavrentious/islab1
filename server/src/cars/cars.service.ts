@@ -69,7 +69,7 @@ export class CarsService {
   // --- Public methods (no em argument, return DTOs) ---
   async create(dto: CreateCarDto): Promise<CarDto> {
     const car = await this._create(dto);
-    return new CarDto(car);
+    return car.toDto();
   }
 
   async findAll(
@@ -94,7 +94,7 @@ export class CarsService {
     const totalPages = calculateTotalPages(totalItems, limit);
 
     return {
-      items: items.map((item) => new CarDto(item)),
+      items: items.map((item) => item.toDto()),
       limit,
       page,
       totalItems,
@@ -104,7 +104,7 @@ export class CarsService {
 
   async findOne(id: number): Promise<CarDto | null> {
     const car = await this._findOne(id);
-    return car ? new CarDto(car) : null;
+    return car ? car.toDto() : null;
   }
 
   async exists(id: number): Promise<boolean> {
@@ -119,12 +119,12 @@ export class CarsService {
 
   async findOneOrFail(id: number): Promise<CarDto> {
     const car = await this._findOneOrFail(id);
-    return new CarDto(car);
+    return car.toDto();
   }
 
   async findOneByName(name: string): Promise<CarDto | null> {
     const result = await this.em.findOne(Car, { name });
-    return result ? new CarDto(result) : null;
+    return result ? result.toDto() : null;
   }
 
   async update(id: number, dto: UpdateCarDto): Promise<CarDto> {
@@ -142,7 +142,7 @@ export class CarsService {
         { isolationLevel: IsolationLevel.SERIALIZABLE },
       ),
     );
-    return new CarDto(car);
+    return car.toDto();
   }
 
   async remove(id: number) {

@@ -9,6 +9,8 @@ import {
   Property,
 } from "@mikro-orm/core";
 import { Car } from "../../cars/entities/car.entity";
+import { CoordinatesDto } from "../dto/create-humanbeing.dto";
+import { HumanBeingDto } from "../dto/humanbeing.dto";
 
 export enum Mood {
   SADNESS = "SADNESS",
@@ -25,12 +27,19 @@ export enum WeaponType {
 }
 
 @Embeddable()
-class Coordinates {
+export class Coordinates {
   @Property({ columnType: "double precision" })
   x!: number; // double
 
   @Property({ columnType: "integer" })
   y!: number; // int
+
+  toDto(): CoordinatesDto {
+    return {
+      x: this.x,
+      y: this.y,
+    };
+  }
 }
 
 @Entity()
@@ -94,4 +103,23 @@ export class HumanBeing {
   // root parent, just to not traverse the whole tree every time
   @ManyToOne({ entity: () => HumanBeing, nullable: true, default: null })
   _version_root?: HumanBeing | null;
+
+  toDto(): HumanBeingDto {
+    return {
+      id: this.id,
+      name: this.name,
+      coordinates: this.coordinates.toDto(),
+      realHero: this.realHero,
+      hasToothpick: this.hasToothpick,
+      car: this.car?.id ?? null,
+      mood: this.mood,
+      impactSpeed: this.impactSpeed,
+      soundtrackName: this.soundtrackName,
+      minutesOfWaiting: this.minutesOfWaiting,
+      weaponType: this.weaponType,
+      _version: this._version,
+      _next_version: this._next_version?.id ?? null,
+      _version_root: this._version_root?.id ?? null,
+    };
+  }
 }

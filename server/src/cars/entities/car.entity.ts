@@ -1,5 +1,6 @@
 import { Entity, OneToMany, PrimaryKey, Property } from "@mikro-orm/core";
 import { HumanBeing } from "../../humanbeings/entities/humanbeing.entity";
+import { CarDto } from "../dto/car.dto";
 
 @Entity()
 export class Car {
@@ -14,4 +15,12 @@ export class Car {
 
   @OneToMany(() => HumanBeing, (human) => human.car)
   owners: HumanBeing[];
+
+  toDto(): CarDto {
+    return {
+      id: this.id,
+      name: this.name,
+      cool: this.cool,
+    };
+  }
 }

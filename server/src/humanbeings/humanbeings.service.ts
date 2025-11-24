@@ -4,7 +4,6 @@ import {
   EntityRepository,
   FilterQuery,
   IsolationLevel,
-  Loaded,
 } from "@mikro-orm/postgresql";
 import {
   BadRequestException,
@@ -23,7 +22,11 @@ import { FindAllHumanbeingsQueryParamsDto } from "./dto/find-all-humanbeings-que
 import { GroupByCarDto } from "./dto/group-by-car.dto";
 import { HumanBeingDto } from "./dto/humanbeing.dto";
 import { UpdateHumanBeingDto } from "./dto/update-humanbeing.dto";
-import { HumanBeing, WeaponType } from "./entities/humanbeing.entity";
+import {
+  Coordinates,
+  HumanBeing,
+  WeaponType,
+} from "./entities/humanbeing.entity";
 import { retryTransaction } from "./utils";
 
 @Injectable()
@@ -68,7 +71,7 @@ export class HumanBeingsService {
       ),
     );
 
-    return new HumanBeingDto(humanBeing);
+    return humanBeing.toDto();
   }
 
   async findAll(
@@ -125,7 +128,7 @@ export class HumanBeingsService {
     const totalPages = calculateTotalPages(totalItems, limit);
 
     return {
-      items: items.map((item) => new HumanBeingDto(item)),
+      items: items.map((item) => item.toDto()),
       limit,
       page,
       totalItems,
@@ -135,7 +138,7 @@ export class HumanBeingsService {
 
   async findOne(id: number): Promise<HumanBeingDto | null> {
     const entity = await this.repo.findOne({ id });
-    return entity ? new HumanBeingDto(entity) : null;
+    return entity ? entity.toDto() : null;
   }
 
   async _findOneOrFail(
@@ -154,7 +157,7 @@ export class HumanBeingsService {
 
   async findOneOrFail(id: number): Promise<HumanBeingDto> {
     const entity = await this._findOneOrFail(id);
-    return new HumanBeingDto(entity);
+    return entity.toDto();
   }
 
   async update(id: number, dto: UpdateHumanBeingDto): Promise<HumanBeingDto> {
@@ -181,16 +184,21 @@ export class HumanBeingsService {
             tx.persist(entity);
           }
 
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { car: _, ...rest } = dto;
-          const data: Partial<Loaded<HumanBeing>> = { ...rest };
+          const { car: carDto, coordinates: coordinatesDto, ...rest } = dto;
+          const data: Partial<HumanBeing> = { ...rest };
 
-          if (dto.car !== undefined) {
-            if (!dto.car) data.car = null;
-            else if (typeof dto.car === "number") {
-              data.car = await this.carsService._findOneOrFail(dto.car, tx);
+          if (coordinatesDto !== undefined) {
+            data.coordinates = new Coordinates();
+            data.coordinates.x = coordinatesDto.x;
+            data.coordinates.y = coordinatesDto.y;
+          }
+
+          if (carDto !== undefined) {
+            if (!carDto) data.car = null;
+            else if (typeof carDto === "number") {
+              data.car = await this.carsService._findOneOrFail(carDto, tx);
             } else {
-              data.car = await this.carsService._create(dto.car, tx);
+              data.car = await this.carsService._create(carDto, tx);
             }
           }
 
@@ -202,7 +210,7 @@ export class HumanBeingsService {
       ),
     );
 
-    return new HumanBeingDto(humanBeing);
+    return humanBeing.toDto();
   }
 
   async exists(id: number): Promise<boolean> {
@@ -216,7 +224,7 @@ export class HumanBeingsService {
       { $or: [{ id: rootId }, { _version_root: rootId }] },
       { orderBy: { _version: "asc" }, populate: false },
     );
-    return versions.map((item) => new HumanBeingDto(item));
+    return versions.map((item) => item.toDto());
   }
 
   async remove(id: number): Promise<void> {

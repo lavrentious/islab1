@@ -1,18 +1,8 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { HumanBeing, Mood, WeaponType } from "../entities/humanbeing.entity";
+import { Mood, WeaponType } from "../entities/humanbeing.entity";
 import { CoordinatesDto } from "./create-humanbeing.dto";
 
-export class HumanBeingDto
-  implements
-    Partial<Omit<HumanBeing, "car" | "_next_version" | "_version_root">>
-{
-  constructor(humanBeing: HumanBeing) {
-    Object.assign(this, humanBeing);
-    this.car = humanBeing.car?.id ?? null;
-    this._next_version = humanBeing._next_version?.id ?? null;
-    this._version_root = humanBeing._version_root?.id ?? null;
-  }
-
+export class HumanBeingDto {
   @ApiProperty()
   id!: number;
 
