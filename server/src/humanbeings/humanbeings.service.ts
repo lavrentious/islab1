@@ -90,19 +90,17 @@ export class HumanBeingsService {
     if (params.soundtrackName !== undefined)
       where.soundtrackName = { $ilike: `%${params.soundtrackName}%` };
 
+    let carFilter: FilterQuery<Car> | null = {};
     if (params.hasCar !== undefined) {
-      where.car = params.hasCar ? { $ne: null } : null;
+      carFilter = params.hasCar ? { $ne: null } : null;
     }
-
-    if (params.hasCar !== false && params.carName !== undefined) {
-      where.car = {
-        ...(where.car as Partial<Car>),
-        name: { $ilike: `%${params.carName}%` },
-      };
-    }
-
-    if (params.hasCar !== false && params.carCool !== undefined) {
-      where.car = { ...(where.car as Partial<Car>), cool: params.carCool };
+    if (params.hasCar !== false) {
+      if (params.carName !== undefined) {
+        carFilter!.name = { $ilike: `%${params.carName}%` };
+      }
+      if (params.carCool !== undefined) {
+        carFilter!.cool = params.carCool;
+      }
     }
 
     if (params.onlyLatestVersions) {
@@ -111,6 +109,10 @@ export class HumanBeingsService {
 
     const orderBy: Record<string, "ASC" | "DESC"> = {};
     if (params.sortBy) orderBy[params.sortBy] = params.sortOrder || "ASC";
+
+    if (carFilter === null || Object.keys(carFilter).length !== 0) {
+      where.car = carFilter;
+    }
 
     const items: HumanBeing[] =
       params.paginate && params.page && params.limit && paginateQuery

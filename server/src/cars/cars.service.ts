@@ -15,6 +15,7 @@ import {
   calculateTotalPages,
   paginateParamsToQuery,
 } from "src/common/utils/pagination.utils";
+import { HumanBeing } from "src/humanbeings/entities/humanbeing.entity";
 import { retryTransaction } from "src/humanbeings/utils";
 import { CarDto } from "./dto/car.dto";
 import { CreateCarDto } from "./dto/create-car.dto";
@@ -107,14 +108,21 @@ export class CarsService {
     return car ? car.toDto() : null;
   }
 
-  async exists(id: number): Promise<boolean> {
-    const count = await this.em.count(Car, { id });
+  async _exists(id: number, em: EntityManager = this.em): Promise<boolean> {
+    const count = await em.count(Car, { id });
     return count > 0;
   }
 
-  async throwIfNotExists(id: number): Promise<void> {
-    const exists = await this.exists(id);
+  async _throwIfNotExists(
+    id: number,
+    em: EntityManager = this.em,
+  ): Promise<void> {
+    const exists = await this._exists(id, em);
     if (!exists) throw new NotFoundException(`Car #${id} not found`);
+  }
+
+  async throwIfNotExists(id: number): Promise<void> {
+    return this._throwIfNotExists(id);
   }
 
   async findOneOrFail(id: number): Promise<CarDto> {
@@ -149,10 +157,11 @@ export class CarsService {
     await retryTransaction(async () =>
       this.em.transactional(
         async (tx) => {
-          const car = await this._findOneOrFail(id, tx);
-          if (car.owners.length) {
+          await this._throwIfNotExists(id, tx);
+          const ownerCount = await tx.count(HumanBeing, { car: id });
+          if (ownerCount) {
             throw new BadRequestException(
-              `Car #${id} has ${car.owners.length} owners and cannot be deleted`,
+              `Car #${id} has ${ownerCount} owners and cannot be deleted`,
             );
           }
           await tx.nativeDelete(Car, { id });

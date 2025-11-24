@@ -1,4 +1,10 @@
-import { Entity, OneToMany, PrimaryKey, Property } from "@mikro-orm/core";
+import {
+  Collection,
+  Entity,
+  OneToMany,
+  PrimaryKey,
+  Property,
+} from "@mikro-orm/core";
 import { HumanBeing } from "../../humanbeings/entities/humanbeing.entity";
 import { CarDto } from "../dto/car.dto";
 
@@ -14,7 +20,7 @@ export class Car {
   cool!: boolean | null;
 
   @OneToMany(() => HumanBeing, (human) => human.car)
-  owners: HumanBeing[];
+  owners!: Collection<HumanBeing>;
 
   toDto(): CarDto {
     return {
