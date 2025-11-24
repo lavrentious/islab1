@@ -1,21 +1,70 @@
-import { BadRequestException } from "@nestjs/common";
+import { ConflictException, HttpException } from "@nestjs/common";
+
+function extractSqlState(error: unknown): string | undefined {
+  if (!error || typeof error !== "object") return undefined;
+  const e = error as Record<string, unknown>;
+
+  const driverError =
+    e["driverError"] && typeof e["driverError"] === "object"
+      ? (e["driverError"] as Record<string, unknown>)
+      : undefined;
+
+  const cause =
+    e["cause"] && typeof e["cause"] === "object"
+      ? (e["cause"] as Record<string, unknown>)
+      : undefined;
+
+  const candidates = [
+    e["code"],
+    e["sqlState"],
+    driverError?.["code"],
+    cause?.["code"],
+    cause?.["sqlState"],
+  ];
+
+  for (const c of candidates) {
+    if (typeof c === "string") return c;
+    if (typeof c === "number") return String(c);
+  }
+
+  return undefined;
+}
 
 export async function retryTransaction<T>(
   fn: () => Promise<T>,
-  maxRetries: number = 3,
-  delayMs: number = 1000,
+  maxRetries = 3,
+  delayMs = 200 + Math.floor(Math.random() * 200),
 ): Promise<T> {
   let attempts = 0;
+
   while (attempts < maxRetries) {
     try {
       return await fn();
-    } catch (error) {
-      attempts++;
-      if (attempts >= maxRetries) {
-        throw error;
+    } catch (err: any) {
+      if (err instanceof HttpException) {
+        throw err;
       }
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
+
+      const sqlState = extractSqlState(err);
+
+      // 40001 = serialization failure (including write skew)
+      const isSerializationError = sqlState === "40001" || sqlState === "40P01";
+
+      if (!isSerializationError) {
+        throw err;
+      }
+
+      attempts++;
+
+      if (attempts >= maxRetries) {
+        break;
+      }
+
+      await new Promise((res) => setTimeout(res, delayMs));
     }
   }
-  throw new BadRequestException("Max retries exceeded");
+
+  throw new ConflictException(
+    "Transaction failed after multiple retries. It may succeed if retried.",
+  );
 }
