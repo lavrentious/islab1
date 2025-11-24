@@ -32,8 +32,9 @@ function extractSqlState(error: unknown): string | undefined {
 
 export async function retryTransaction<T>(
   fn: () => Promise<T>,
-  maxRetries = 3,
-  delayMs = 200 + Math.floor(Math.random() * 200),
+  maxRetries = 10,
+  baseDelayMs = 200,
+  maxDelayMs = 1500,
 ): Promise<T> {
   let attempts = 0;
 
@@ -60,7 +61,10 @@ export async function retryTransaction<T>(
         break;
       }
 
-      await new Promise((res) => setTimeout(res, delayMs));
+      const sleepTime =
+        Math.random() * Math.min(maxDelayMs, baseDelayMs * 2 ** attempts);
+      console.log(`attempt ${attempts}: sleeping for ${sleepTime} ms...`);
+      await new Promise((res) => setTimeout(res, sleepTime));
     }
   }
 
