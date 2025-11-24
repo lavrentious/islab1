@@ -157,16 +157,16 @@ export class CarsService {
     await retryTransaction(async () =>
       this.em.transactional(
         async (tx) => {
-          await this._throwIfNotExists(id, tx);
+          const car = await this._findOneOrFail(id, tx);
           const ownerCount = await tx.count(HumanBeing, { car: id });
           if (ownerCount) {
             throw new BadRequestException(
               `Car #${id} has ${ownerCount} owners and cannot be deleted`,
             );
           }
-          await tx.nativeDelete(Car, { id });
+          await tx.removeAndFlush(car);
         },
-        { isolationLevel: IsolationLevel.SERIALIZABLE },
+        { isolationLevel: IsolationLevel.REPEATABLE_READ },
       ),
     );
   }
