@@ -56,6 +56,7 @@ export async function retryTransaction<T>(
       }
 
       attempts++;
+      console.log(`retrying transaction: ${attempts}/${maxRetries}`);
 
       if (attempts >= maxRetries) {
         break;
