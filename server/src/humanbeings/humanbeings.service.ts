@@ -280,10 +280,31 @@ export class HumanBeingsService {
   }
 
   async countImpactSpeedLessThan(threshold: number) {
-    const [{ count_impact_speed_less_than }] = await this.em
-      .getConnection()
-      .execute("SELECT count_impact_speed_less_than(?)", [threshold]);
-    return +count_impact_speed_less_than;
+    return retryTransaction(() =>
+      this.em.transactional(
+        async (tx) => {
+          const [{ count_impact_speed_less_than: res1 }] = await tx.execute(
+            "SELECT count_impact_speed_less_than(?)",
+            [threshold],
+          );
+          console.log("res1:", res1);
+          await new Promise((res) => setTimeout(res, 1000)); // simulate delay (e.g. complex triggers working in db, so we'll refetch data after)
+          const [{ count_impact_speed_less_than: res2 }] = await tx.execute(
+            "SELECT count_impact_speed_less_than(?)",
+            [threshold],
+          );
+          console.log("res2:", res2);
+          if (res1 !== res2) {
+            console.log("NON-REPEATABLE READ OCCURED");
+          }
+
+          return +res2;
+        },
+        { isolationLevel: IsolationLevel.READ_COMMITTED }, // non repeatable read
+        // { isolationLevel: IsolationLevel.REPEATABLE_READ }, // ok
+        // { isolationLevel: IsolationLevel.SERIALIZABLE }, // ok
+      ),
+    );
   }
 
   async uniqueWeaponTypes() {
