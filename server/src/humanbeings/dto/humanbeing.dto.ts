@@ -9,6 +9,9 @@ export class HumanBeingDto {
   @ApiProperty({ example: "Nikita", description: "Human name, must be unique" })
   name!: string;
 
+  @ApiProperty()
+  creationDate!: string;
+
   @ApiProperty({ type: CoordinatesDto })
   coordinates!: CoordinatesDto;
 
