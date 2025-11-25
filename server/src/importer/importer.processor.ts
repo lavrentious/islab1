@@ -17,6 +17,7 @@ import { CreateCarDto } from "src/cars/dto/create-car.dto";
 import { Car } from "src/cars/entities/car.entity";
 import { CreateHumanBeingDto } from "src/humanbeings/dto/create-humanbeing.dto";
 import { HumanBeing } from "src/humanbeings/entities/humanbeing.entity";
+import { retryTransaction } from "src/humanbeings/utils";
 import { Worker } from "worker_threads";
 import {
   ImportOperation,
@@ -28,6 +29,11 @@ import {
   ImportWorkerPayload,
   ImportWorkerResult,
 } from "./types";
+
+function log(msg: string, ...meta: any[]) {
+  const ts = new Date().toISOString();
+  console.log(`[${ts}] ${msg}`, ...meta); // eslint-disable-line
+}
 
 @Processor("import-queue")
 export class ImporterProcessor {
@@ -142,6 +148,10 @@ export class ImporterProcessor {
     okCount: number;
     duplicateCount: number;
   }> {
+    log(`saveToDatabase: start - parsedObjects=${parsedObjects.length}`);
+
+    const batchSize = 1000;
+
     const uniqueCarIds = Array.from(
       new Set(
         parsedObjects
@@ -149,115 +159,168 @@ export class ImporterProcessor {
           .map((dto) => dto.car as number),
       ),
     );
+    log(`Unique numeric car IDs: count=${uniqueCarIds.length}`);
 
-    // create cars as dtos
-    const carDtoMap = new Map<string, CreateCarDto>(); // hash dto -> dto
+    const carDtoMap = new Map<string, CreateCarDto>();
     for (const dto of parsedObjects) {
       if (dto.car && typeof dto.car === "object") {
         const hash = this._hashCar(dto.car);
         carDtoMap.set(hash, dto.car);
       }
     }
+    log(`Unique car DTOs: count=${carDtoMap.size}`);
 
     const humanNames = new Set<string>(parsedObjects.map((dto) => dto.name));
+    log(`Unique human names: count=${humanNames.size}`);
 
     const em = this.orm.em.fork();
 
-    return await em.transactional(
-      async (tx) => {
-        let okCount = 0;
-        let duplicateCount = 0;
+    return retryTransaction(() =>
+      em.transactional(
+        async (tx) => {
+          log("transaction started");
 
-        //check car ids
-        const invalidCars = await this._getInvalidCarIds(uniqueCarIds, tx);
-        if (invalidCars.length > 0) {
-          throw new BadRequestException(
-            `Invalid cars: ${invalidCars.join(", ")}`,
-          );
-        }
-
-        // check car dtos
-        console.log("unique cars:", carDtoMap);
-        const takenCarNames = await this._getTakenCarNames(
-          Array.from(carDtoMap.values()),
-          tx,
-        );
-        if (takenCarNames.length > 0) {
-          throw new BadRequestException(
-            `Car name must be unique - unavailable car names: ${takenCarNames.map((name) => `"${name}"`).join(", ")}`,
-          );
-        }
-
-        // create cars as dtos
-        const carMap = new Map<string, Car>(); // hash dto -> car entity
-        for (const [hash, dto] of carDtoMap.entries()) {
-          const car = tx.create(Car, dto as Omit<Car, "id">);
-          carMap.set(hash, car);
-        }
-
-        const fromDB: HumanBeing[] = humanNames.size
-          ? await tx.find(HumanBeing, {
-              name: { $in: [...humanNames] },
-              _next_version: null,
-            })
-          : [];
-        const hbMap = new Map<string, HumanBeing>(
-          fromDB.map((human) => [human.name, human]),
-        );
-        const toPersist: HumanBeing[] = [];
-
-        console.log("importing into db...");
-        for (const dto of parsedObjects) {
-          // find duplicates
-          const existing = hbMap.get(dto.name);
-
-          let car: Car | undefined;
-          if (dto.car && typeof dto.car === "object") {
-            const hash = this._hashCar(dto.car);
-            car = carMap.get(hash);
+          const invalidCars = await this._getInvalidCarIds(uniqueCarIds, tx);
+          if (invalidCars.length > 0) {
+            log("Invalid car IDs found", invalidCars);
+            throw new BadRequestException(
+              `Invalid cars: ${invalidCars.join(", ")}`,
+            );
           }
 
-          if (existing) {
-            // duplicates found
-            const humanBeing = tx.create(HumanBeing, {
-              ...dto,
-              car,
-              _version: existing._version + 1,
-              _version_root: existing._version_root
-                ? existing._version_root
-                : existing,
-              creationDate: new Date(),
-            });
-            existing._next_version = humanBeing;
-            hbMap.set(dto.name, humanBeing);
-            toPersist.push(humanBeing);
-            toPersist.push(existing);
+          const carDtosArray = Array.from(carDtoMap.values());
+          const takenCarNames = await this._getTakenCarNames(carDtosArray, tx);
+          if (takenCarNames.length > 0) {
+            log("Car names already taken:", takenCarNames);
+            throw new BadRequestException(
+              `Car name must be unique - unavailable car names: ${takenCarNames
+                .map((n) => `"${n}"`)
+                .join(", ")}`,
+            );
+          }
 
-            duplicateCount++;
+          // create cars as dtos
+          const carMap = new Map<string, Car>(); // hash dto -> car entity
+          for (const [hash, dto] of carDtoMap.entries()) {
+            const car = tx.create(Car, dto as Omit<Car, "id">);
+            carMap.set(hash, car);
+          }
+          log(`Prepared car entities: count=${carMap.size}`);
+
+          const carEntities = Array.from(carMap.values());
+          if (carEntities.length > 0) {
+            log(`Persisting cars in chunks of ${batchSize}`);
+            for (let i = 0; i < carEntities.length; i += batchSize) {
+              const chunk = carEntities.slice(i, i + batchSize);
+              tx.persist(chunk);
+              const start = Date.now();
+              await tx.flush();
+              log(
+                `Flushed cars chunk ${i / batchSize + 1} (size=${chunk.length}) in ${
+                  Date.now() - start
+                }ms`,
+              );
+            }
           } else {
-            const humanBeing = tx.create(HumanBeing, {
-              ...dto,
-              car,
-              _version: 0,
-              creationDate: new Date(),
-            });
-            hbMap.set(dto.name, humanBeing);
-            toPersist.push(humanBeing);
-            okCount++;
+            log("No car entities to persist");
           }
-        }
-        tx.persist(toPersist);
-        tx.persist(carMap.values());
-        await tx.flush();
 
-        console.log(
-          `--- db import result: ${okCount} created, ${duplicateCount} duplicates`,
-        );
-        return { okCount, duplicateCount };
-      },
-      // { isolationLevel: IsolationLevel.READ_COMMITTED },
-      { isolationLevel: IsolationLevel.REPEATABLE_READ },
-      // { isolationLevel: IsolationLevel.SERIALIZABLE }, // only this helps; => Serialization Anomaly
+          const fromDB: HumanBeing[] = humanNames.size
+            ? await tx.find(HumanBeing, {
+                name: { $in: [...humanNames] },
+                _next_version: null,
+              })
+            : [];
+          log(`Existing humans fetched from DB: ${fromDB.length}`);
+
+          const hbMap = new Map<string, HumanBeing>(
+            fromDB.map((human) => [human.name, human]),
+          );
+
+          let okCount = 0;
+          let duplicateCount = 0;
+
+          const chunkBuffer: any[] = [];
+          const flushChunk = async (force = false) => {
+            if (chunkBuffer.length === 0 && !force) return;
+            tx.persist(chunkBuffer);
+            await tx.flush();
+
+            tx.clear();
+            chunkBuffer.length = 0;
+          };
+
+          log("Beginning entity import loop (chunked)...");
+          for (const dto of parsedObjects) {
+            const existing = hbMap.get(dto.name);
+
+            let carEntity: Car | undefined;
+            if (dto.car && typeof dto.car === "object") {
+              const hash = this._hashCar(dto.car);
+              const cachedCar = carMap.get(hash);
+              if (cachedCar && cachedCar.id) {
+                carEntity = tx.getReference(Car, cachedCar.id);
+              } else if (cachedCar) {
+                carEntity = cachedCar;
+              } else {
+                carEntity = undefined;
+              }
+            } else if (dto.car && typeof dto.car === "number") {
+              carEntity = tx.getReference(Car, dto.car);
+            }
+
+            if (existing) {
+              duplicateCount++;
+              const humanBeing = tx.create(HumanBeing, {
+                ...dto,
+                car: carEntity,
+                _version: existing._version + 1,
+                _version_root: existing._version_root
+                  ? existing._version_root
+                  : existing,
+                creationDate: new Date(),
+              });
+              existing._next_version = humanBeing;
+
+              chunkBuffer.push(humanBeing, existing);
+              hbMap.set(dto.name, humanBeing);
+            } else {
+              okCount++;
+              const humanBeing = tx.create(HumanBeing, {
+                ...dto,
+                car: carEntity,
+                _version: 0,
+                creationDate: new Date(),
+              });
+              chunkBuffer.push(humanBeing);
+              hbMap.set(dto.name, humanBeing);
+            }
+
+            if (chunkBuffer.length >= batchSize) {
+              await flushChunk();
+              for (const [hash, car] of carMap.entries()) {
+                if (car.id) {
+                  carMap.set(
+                    hash,
+                    tx.getReference(Car, car.id) as unknown as Car,
+                  );
+                }
+              }
+            }
+          }
+
+          await flushChunk(true);
+
+          log(
+            `--- db import result: created=${okCount}, duplicates=${duplicateCount}`,
+          );
+
+          return { okCount, duplicateCount };
+        },
+        // { isolationLevel: IsolationLevel.READ_COMMITTED },
+        { isolationLevel: IsolationLevel.REPEATABLE_READ },
+        // { isolationLevel: IsolationLevel.SERIALIZABLE }, // only this helps; => Serialization Anomaly
+      ),
     );
   }
 
