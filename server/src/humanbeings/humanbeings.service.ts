@@ -318,7 +318,9 @@ export class HumanBeingsService {
             (humanBeing.minutesOfWaiting ?? 0) + value;
           await tx.flush();
         },
-        { isolationLevel: IsolationLevel.REPEATABLE_READ },
+        // { isolationLevel: IsolationLevel.SERIALIZABLE }, // OK
+        // { isolationLevel: IsolationLevel.REPEATABLE_READ }, // OK
+        { isolationLevel: IsolationLevel.READ_COMMITTED }, // Lost update
       ),
     );
   }
