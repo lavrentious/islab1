@@ -108,6 +108,7 @@ export class HumanBeing {
     return {
       id: this.id,
       name: this.name,
+      creationDate: this.creationDate.toISOString(),
       coordinates: this.coordinates.toDto(),
       realHero: this.realHero,
       hasToothpick: this.hasToothpick,
