@@ -308,4 +308,18 @@ export class HumanBeingsService {
     );
     return +assign_car_to_carless;
   }
+
+  async incrementMinutesOfWaiting(id: number, value: number) {
+    return retryTransaction(async () =>
+      this.em.transactional(
+        async (tx) => {
+          const humanBeing = await this._findOneOrFail(id, tx);
+          humanBeing.minutesOfWaiting =
+            (humanBeing.minutesOfWaiting ?? 0) + value;
+          await tx.flush();
+        },
+        { isolationLevel: IsolationLevel.REPEATABLE_READ },
+      ),
+    );
+  }
 }

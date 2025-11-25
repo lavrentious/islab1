@@ -16,6 +16,7 @@ import { CreateHumanBeingDto } from "./dto/create-humanbeing.dto";
 import { FindAllHumanbeingsQueryParamsDto } from "./dto/find-all-humanbeings-query-params.dto";
 import { GroupByCarDto, GroupByCarItem } from "./dto/group-by-car.dto";
 import { HumanBeingDto } from "./dto/humanbeing.dto";
+import { IncrementMinutesOfWaitingDto } from "./dto/increment-minutes-of-waiting.dto";
 import { UpdateHumanBeingDto } from "./dto/update-humanbeing.dto";
 import { HumanBeingsService } from "./humanbeings.service";
 
@@ -73,6 +74,14 @@ export class HumanBeingsController {
   @Get(":id/versions")
   async findVersions(@Param("id") id: string): Promise<HumanBeingDto[]> {
     return this.service.findVersions(+id);
+  }
+
+  @Patch("/increment-minutes-of-waiting")
+  async incrementMinutesOfWaiting(
+    @Body() data: IncrementMinutesOfWaitingDto,
+  ): Promise<void> {
+    console.log(data);
+    return this.service.incrementMinutesOfWaiting(data.id, data.value);
   }
 
   @ApiOperation({ summary: "Update human being" })
