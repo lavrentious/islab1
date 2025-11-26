@@ -166,7 +166,9 @@ export class CarsService {
           }
           await tx.removeAndFlush(car);
         },
-        { isolationLevel: IsolationLevel.REPEATABLE_READ },
+        // { isolationLevel: IsolationLevel.SERIALIZABLE }, // OK
+        // { isolationLevel: IsolationLevel.REPEATABLE_READ }, // OK
+        { isolationLevel: IsolationLevel.READ_COMMITTED }, // phantom read
       ),
     );
   }
