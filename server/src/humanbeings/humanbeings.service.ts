@@ -229,6 +229,45 @@ export class HumanBeingsService {
     return versions.map((item) => item.toDto());
   }
 
+  async getTwice(id: number): Promise<{
+    res1: HumanBeingDto | null;
+    res2: HumanBeingDto | null;
+    equal: boolean;
+  }> {
+    return retryTransaction(() =>
+      this.em.transactional(
+        async (tx) => {
+          console.log("reading res1...");
+          const r1 = await tx.findOne(HumanBeing, { id });
+          const res1 = r1 ? r1.toDto() : null;
+          console.log("read res1", res1);
+
+          // simulate some external logic - e.g. triggers
+          await new Promise((resolve) => setTimeout(resolve, 2500));
+
+          console.log("reading res2...");
+          // nb: by default, it uses cached value via identity map
+          // so fetch it explicitly via { refresh: true }
+          const r2 = await tx.findOne(HumanBeing, { id }, { refresh: true });
+          const res2 = r2 ? r2.toDto() : null;
+          console.log("read res2", res2);
+
+          const equal = HumanBeingDto.equals(res1, res2);
+          console.log("equal?", equal);
+
+          return {
+            res1,
+            res2,
+            equal,
+          };
+        },
+        { isolationLevel: IsolationLevel.READ_COMMITTED }, // NRR
+        // { isolationLevel: IsolationLevel.REPEATABLE_READ }, // OK
+        // { isolationLevel: IsolationLevel.SERIALIZABLE }, // OK
+      ),
+    );
+  }
+
   async remove(id: number): Promise<void> {
     return retryTransaction(() =>
       this.em.transactional(

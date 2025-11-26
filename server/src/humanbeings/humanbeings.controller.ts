@@ -63,6 +63,11 @@ export class HumanBeingsController {
     return this.service.findOneOrFail(+id);
   }
 
+  @Get(":id/twice")
+  async findTwice(@Param("id") id: string) {
+    return this.service.getTwice(+id);
+  }
+
   @ApiOperation({ summary: "Find human being's chain of versions" })
   @ApiResponse({
     status: 200,

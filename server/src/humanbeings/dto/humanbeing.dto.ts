@@ -62,4 +62,46 @@ export class HumanBeingDto {
     nullable: true,
   })
   _version_root!: number | null;
+
+  static equals(
+    hb1: HumanBeingDto | null | undefined,
+    hb2: HumanBeingDto | null | undefined,
+  ): boolean {
+    if (!hb1 || !hb2) {
+      return false;
+    }
+
+    // console.log("id", hb1.id === hb2.id);
+    // console.log("name", hb1.name === hb2.name);
+    // console.log("creationDate", hb1.creationDate === hb2.creationDate);
+    // console.log("coordinates.x", hb1.coordinates.x === hb2.coordinates.x);
+    // console.log("coordinates.y", hb1.coordinates.y === hb2.coordinates.y);
+    // console.log("realHero", hb1.realHero === hb2.realHero);
+    // console.log("hasToothpick", hb1.hasToothpick === hb2.hasToothpick);
+    // console.log("car", hb1.car?.id === hb2.car?.id);
+    // console.log("mood", hb1.mood === hb2.mood);
+    // console.log("impactSpeed", hb1.impactSpeed === hb2.impactSpeed);
+    // console.log("soundtrackName", hb1.soundtrackName === hb2.soundtrackName);
+    // console.log(
+    //   "minutesOfWaiting",
+    //   hb1.minutesOfWaiting === hb2.minutesOfWaiting,
+    // );
+    // console.log("weaponType", hb1.weaponType === hb2.weaponType);
+
+    return (
+      hb1.id === hb2.id &&
+      hb1.name === hb2.name &&
+      hb1.creationDate === hb2.creationDate &&
+      hb1.coordinates.x === hb2.coordinates.x &&
+      hb1.coordinates.y === hb2.coordinates.y &&
+      hb1.realHero === hb2.realHero &&
+      hb1.hasToothpick === hb2.hasToothpick &&
+      hb1.car === hb2.car &&
+      hb1.mood === hb2.mood &&
+      hb1.impactSpeed === hb2.impactSpeed &&
+      hb1.soundtrackName === hb2.soundtrackName &&
+      hb1.minutesOfWaiting === hb2.minutesOfWaiting &&
+      hb1.weaponType === hb2.weaponType
+    );
+  }
 }
