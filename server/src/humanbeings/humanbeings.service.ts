@@ -295,7 +295,7 @@ export class HumanBeingsService {
           );
           console.log("res2:", res2);
           if (res1 !== res2) {
-            console.log("NON-REPEATABLE READ OCCURED");
+            console.log("PHANTOM READ OCCURED");
           }
 
           return +res2;
