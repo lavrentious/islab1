@@ -129,6 +129,7 @@ export class ImporterService {
       file.buffer,
       file.mimetype,
     );
+    // const breaker = new BusinessLogicBreaker();
     log(`service: running 2pc`);
     void this.run2PC([
       {
@@ -137,6 +138,12 @@ export class ImporterService {
         rollback: () => s3Uploader.rollback(),
         name: "s3 uploader",
       },
+      // {
+      //   prepare: () => breaker.prepare(),
+      //   commit: () => breaker.commit(),
+      //   rollback: () => breaker.rollback(),
+      //   name: "breaker",
+      // },
       {
         prepare: () => importer.prepare(),
         commit: () => importer.commit(),
@@ -204,6 +211,18 @@ export class ImporterService {
     }
   }
 }
+
+// class BusinessLogicBreaker {
+//   prepare() {
+//     console.log("simulating server-side business logic exception...");
+//     throw new Error("Simulated business logic failure");
+//   }
+
+//   commit() {}
+//   rollback() {
+//     console.log("rollback for BusinessLogicBreaker (no-op)");
+//   }
+// }
 
 export class S3Uploader {
   constructor(
