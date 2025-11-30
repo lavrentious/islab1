@@ -41,4 +41,10 @@ export class ImporterController {
   findOne(@Param("id") id: string) {
     return this.importerService.findOneOrFail(+id);
   }
+
+  @Get(":id/file")
+  async getFile(@Param("id") id: string) {
+    const url = await this.importerService.getDownloadUrl(+id);
+    return { url };
+  }
 }

@@ -4,6 +4,7 @@ import {
   IsNumber,
   IsSemVer,
   IsString,
+  IsUrl,
   validateSync,
 } from "class-validator";
 
@@ -61,6 +62,23 @@ export class EnvironmentVariables {
 
   @IsString()
   TMP_DIR: string;
+
+  // s3 config
+  @IsUrl({ require_protocol: true })
+  @IsString()
+  S3_ENDPOINT: string;
+
+  @IsString()
+  S3_REGION: string;
+
+  @IsString()
+  S3_ACCESS_KEY: string;
+
+  @IsString()
+  S3_SECRET_ACCESS_KEY: string;
+
+  @IsString()
+  S3_BUCKET: string;
 }
 
 export function validate(config: Record<string, unknown>) {

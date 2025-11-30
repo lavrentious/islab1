@@ -13,13 +13,14 @@ import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
 import { EnvironmentVariables } from "src/env.validation";
-import { v7 as uuid } from "uuid";
+import { v7 as generateUuid } from "uuid";
 import { ImportOperationDto } from "./dto/importoperation.dto";
 import {
   ImportOperation,
   ImportStatus,
 } from "./entities/importoperation.entity";
 import { getAllowedFileExtensions } from "./parsers";
+import { ImportFileStorageService } from "./storage/import-file-storage.service";
 import { ImporterProcessorPayload } from "./types";
 
 @Injectable()
@@ -32,6 +33,7 @@ export class ImporterService {
     private readonly em: EntityManager,
     @InjectRepository(ImportOperation)
     private readonly repo: EntityRepository<ImportOperation>,
+    private readonly storage: ImportFileStorageService,
   ) {}
 
   async findOne(id: number): Promise<ImportOperationDto | null> {
@@ -48,6 +50,11 @@ export class ImporterService {
       },
     );
     return new ImportOperationDto(entity);
+  }
+
+  async getDownloadUrl(id: number) {
+    const entity = await this.findOneOrFail(id);
+    return this.storage.getDownloadUrl(entity.fileName);
   }
 
   async findAll(): Promise<ImportOperationDto[]> {
@@ -68,15 +75,10 @@ export class ImporterService {
     }
 
     // save file in temp dir
-    const fileName = uuid() + "." + ext;
-    const tempDir = path.join(this.configService.get("TMP_DIR")!, "/uploads");
-    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
-    const filePath = path.join(tempDir, fileName);
-    fs.writeFileSync(filePath, file.buffer);
+    const fileName = generateUuid() + "." + ext;
 
     // get file hash
     const hash = crypto.createHash("sha256").update(file.buffer).digest("hex");
-    console.log("file hash", hash);
     const existing = await this.repo.count({
       fileHash: hash,
       status: { $ne: ImportStatus.FAILED },
@@ -87,6 +89,9 @@ export class ImporterService {
       );
     }
 
+    // upload to s3
+    await this.storage.uploadFile(fileName, file.buffer, file.mimetype);
+
     // create job & enqueue
     const importOp = this.repo.create({
       fileName,
@@ -96,12 +101,21 @@ export class ImporterService {
     });
     await this.em.persistAndFlush(importOp);
 
+    // save file temporarily
+    const tempDir = path.join(this.configService.get("TMP_DIR")!, "/uploads");
+    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+    const filePath = path.join(tempDir, fileName);
+    fs.writeFileSync(filePath, file.buffer);
+
     const job = await this.importQueue.add("import-file", {
       filePath,
       importOp: importOp.id,
     });
 
     void job.finished().finally(() => {
+      console.log(
+        `job for ${job.data.filePath} finished, deleting ${filePath}`,
+      );
       try {
         fs.unlinkSync(filePath);
       } catch {

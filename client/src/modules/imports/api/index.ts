@@ -61,6 +61,9 @@ export const importsApi = createApi({
         socket.disconnect();
       },
     }),
+    getFileDownloadUrl: build.query<{ url: string }, number>({
+      query: (id) => `/${id}/file`,
+    }),
 
     uploadImportFile: build.mutation<ImportOperation, File>({
       query: (file) => {
@@ -83,6 +86,7 @@ export const importsApi = createApi({
 
 export const {
   useFindAllImportOpsQuery,
+  useLazyGetFileDownloadUrlQuery,
   useFindOneImportOpQuery,
   useUploadImportFileMutation,
 } = importsApi;
