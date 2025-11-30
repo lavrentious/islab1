@@ -1,9 +1,9 @@
 import { CreateHumanBeingDto } from "src/humanbeings/dto/create-humanbeing.dto";
+import { ImportOperationDto } from "./dto/importoperation.dto";
 import { ImportStatus } from "./entities/importoperation.entity";
 
 export type ImporterProcessorPayload = {
   filePath: string;
-  importOp: number;
 };
 
 export type ImportWorkerPayload = {
@@ -17,6 +17,17 @@ export type ImportWorkerResult = {
   msg?: string;
 };
 
+export type ImporterProcessorResult =
+  | {
+      ok: true;
+
+      validItems: CreateHumanBeingDto[];
+    }
+  | {
+      ok: false;
+      errorMessage?: string;
+    };
+
 // sockets
 export interface ImportOpSocketPayload {
   id: number;
@@ -28,6 +39,14 @@ export interface ImportOpSocketPayload {
   duplicateCount?: number;
   entryCount?: number;
   errorMessage?: string;
+}
+
+export function importOpDtoToPayload(
+  importOp: Partial<ImportOperationDto> & { id: number },
+): ImportOpSocketPayload {
+  return {
+    ...importOp,
+  };
 }
 
 export interface ImporterServerToClientEvents {

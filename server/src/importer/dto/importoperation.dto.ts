@@ -33,10 +33,13 @@ export class ImportOperationDto {
   duplicateCount?: number;
 
   @ApiProperty()
-  createdAt: Date = new Date();
+  createdAt: string;
 
   @ApiProperty()
-  finishedAt?: Date;
+  startedAt?: string;
+
+  @ApiProperty()
+  finishedAt?: string;
 
   @ApiProperty()
   errorMessage?: string;

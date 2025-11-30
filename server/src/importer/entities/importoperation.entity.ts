@@ -1,4 +1,5 @@
 import { Entity, Enum, PrimaryKey, Property } from "@mikro-orm/core";
+import { ImportOperationDto } from "../dto/importoperation.dto";
 
 export enum ImportStatus {
   PENDING = "PENDING",
@@ -41,4 +42,19 @@ export class ImportOperation {
 
   @Property({ nullable: true })
   errorMessage?: string;
+
+  toDto(): ImportOperationDto {
+    return {
+      id: this.id,
+      fileName: this.fileName,
+      status: this.status,
+      entryCount: this.entryCount,
+      okCount: this.okCount,
+      duplicateCount: this.duplicateCount,
+      createdAt: this.createdAt.toISOString(),
+      startedAt: this.startedAt?.toISOString(),
+      finishedAt: this.finishedAt?.toISOString(),
+      errorMessage: this.errorMessage,
+    };
+  }
 }

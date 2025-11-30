@@ -27,6 +27,7 @@ export class ImportFileStorageService {
 
   async uploadFile(fileName: string, data: Buffer, mimeType?: string) {
     const path = `${BASE_PATH}/${fileName}`;
+    // throw new InternalServerErrorException(`SIMULATED S3 FAILURE`);
     await this.s3.send(
       new PutObjectCommand({
         Bucket: this.bucket,
