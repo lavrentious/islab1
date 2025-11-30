@@ -164,28 +164,43 @@ export class ImporterService {
     }>,
   ) {
     const prepared: typeof resources = [];
+
     try {
       for (const r of resources) {
-        log(`preparing ${r.name}...`);
-        await r.prepare();
-        log(`prepared ${r.name}`);
-        prepared.push(r);
+        try {
+          log(`preparing ${r.name}...`);
+          await r.prepare();
+          prepared.push(r);
+          log(`prepared ${r.name}`);
+        } catch (err) {
+          try {
+            log(`error at prepare, rolling back ${r.name}...`);
+            await r.rollback();
+            log(`rolled back ${r.name}`);
+          } catch (rollbackErr) {
+            console.error(
+              `rollback failed for partially prepared ${r.name}:`,
+              rollbackErr,
+            );
+          }
+          throw err;
+        }
       }
 
       for (const r of prepared) {
         await r.commit();
       }
-    } catch (e) {
-      for (const r of prepared.reverse()) {
+    } catch (err) {
+      for (const r of [...prepared].reverse()) {
         try {
           log(`rolling back ${r.name}...`);
           await r.rollback();
           log(`rolled back ${r.name}`);
         } catch (rollbackErr) {
-          console.error("rollback failed for resource:", rollbackErr);
+          console.error(`rollback failed for ${r.name}:`, rollbackErr);
         }
       }
-      throw e;
+      throw err;
     }
   }
 }
