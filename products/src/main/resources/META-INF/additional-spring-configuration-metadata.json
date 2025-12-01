@@ -1,0 +1,5 @@
+{"properties": [{
+  "name": "app.cache.stats.enabled",
+  "type": "java.lang.String",
+  "description": "Enables cache stats",
+}]}
