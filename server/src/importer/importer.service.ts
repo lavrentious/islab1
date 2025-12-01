@@ -81,8 +81,13 @@ export class ImporterService {
   }
 
   async getDownloadUrl(id: number) {
-    const entity = await this.findOneOrFail(id);
-    return this.storage.getDownloadUrl(entity.fileName);
+    const importOp = await this.findOneOrFail(id);
+    if (importOp.status !== ImportStatus.SUCCESS) {
+      throw new BadRequestException(
+        `Import operation #${id} cannot be downloaded. Status: ${importOp.status} (must be ${ImportStatus.SUCCESS})`,
+      );
+    }
+    return this.storage.getDownloadUrl(importOp.fileName);
   }
 
   async findAll(): Promise<ImportOperationDto[]> {
